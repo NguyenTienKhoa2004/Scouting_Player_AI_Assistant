@@ -1,0 +1,2 @@
+"""MatchMind football analytics package."""
+

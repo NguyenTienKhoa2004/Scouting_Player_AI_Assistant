@@ -1,0 +1,40 @@
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Local Python environments
+.venv/
+venv/
+env/
+
+# Python cache, tests, coverage and build output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Large raw data (download it separately)
+open-data/
+
+# Internal planning documents
+plan.md
+plans/
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

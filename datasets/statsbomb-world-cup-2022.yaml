@@ -1,0 +1,58 @@
+manifest_version: 1
+
+dataset:
+  id: statsbomb-open-data-fifa-world-cup-2022
+  description: StatsBomb event data for the complete 2022 FIFA World Cup
+
+source:
+  name: StatsBomb Open Data
+  repository: https://github.com/statsbomb/open-data
+  git_commit: b0bc9f22dd77c206ddedc1d742893b3bbe64baec
+  license_file: open-data/LICENSE.pdf
+  attribution_required: true
+  schema_versions:
+    data: "1.1.0"
+    shot_fidelity: "2"
+    xy_fidelity: "2"
+
+selection:
+  competition_id: 43
+  competition_name: FIFA World Cup
+  season_id: 106
+  season_name: "2022"
+
+inputs:
+  matches:
+    path: open-data/data/matches/43/106.json
+    included: true
+    expected_files: 1
+    expected_records: 64
+    sha256: e526f97e3f01894f851863fc9cc379e19f792825c57c0780949b3cd1415ab652
+  events:
+    path_template: open-data/data/events/{match_id}.json
+    included: true
+    expected_files: 64
+  lineups:
+    path_template: open-data/data/lineups/{match_id}.json
+    included: true
+    expected_files: 64
+  three_sixty:
+    path_template: open-data/data/three-sixty/{match_id}.json
+    included: true
+    optional_for_other_competitions: true
+    expected_files: 64
+    expected_records: 203882
+
+expected_profile:
+  matches: 64
+  events: 234637
+  event_types: 33
+  shots: 1494
+  shots_with_xg: 1494
+  three_sixty_frames: 203882
+  duplicate_source_event_ids: 0
+  periods: [1, 2, 3, 4, 5]
+  maximum_minute: 127
+  source_coordinate_range:
+    x: [0, 120]
+    y: [0, 80]

@@ -1,0 +1,11 @@
+BEGIN;
+
+DROP TABLE IF EXISTS invalid_events;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS players;
+DROP TABLE IF EXISTS matches;
+DROP TABLE IF EXISTS teams;
+DROP TABLE IF EXISTS ingestion_runs;
+
+COMMIT;
+
