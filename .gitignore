@@ -20,13 +20,10 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+artifacts/
 
 # Large raw data (download it separately)
 open-data/
-
-# Internal planning documents
-plan.md
-plans/
 
 # Logs and temporary files
 *.log

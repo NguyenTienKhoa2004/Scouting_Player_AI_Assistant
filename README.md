@@ -9,16 +9,16 @@ MatchMind AI là một dự án player scouting analytics sử dụng dữ liệ
 - Cầu thủ tạo hoặc làm mất giá trị ở khu vực nào trên sân?
 - Hai cầu thủ cùng vị trí khác nhau như thế nào khi đặt trong cùng một bộ lọc?
 
-Dự án không bắt đầu từ chatbot. Nền tảng của MatchMind là dữ liệu có thể kiểm chứng, chuỗi hành động SPADL-style và kết quả VAEP tái lập được. Lớp AI về sau chỉ giải thích những kết quả đã được hệ thống tính toán.
+Dự án không bắt đầu từ chatbot. Nền tảng của MatchMind là dữ liệu có thể kiểm chứng, chuỗi hành động SPADL do `socceraction` tạo và kết quả VAEP tái lập được. Lớp AI về sau chỉ giải thích những kết quả đã được hệ thống tính toán.
 
 ## Trạng thái hiện tại
 
 | Plan | Mục tiêu | Trạng thái |
 |---|---|---|
-| [01 — Product Scope](plans/01-product-scope.md) | Xác định người dùng, giá trị và phạm vi MVP | Hoàn thành |
-| [02 — Data Foundation](plans/02-data-foundation.md) | Enriched StatsBomb events, lineup intervals và 360 trong PostgreSQL | Hoàn thành |
-| [03 — SPADL Actions & State Features](plans/03-analytics-features.md) | Chuyển event thành action và feature theo từng trạng thái | Bước tiếp theo |
-| [04 — VAEP Modeling](plans/04-vaep-modeling.md) | Train `P_score`/`P_concede`, định giá action và tính VAEP/90 | Đã lên kế hoạch |
+| [01 — Product Scope](docs/plans/01-product-scope.md) | Xác định người dùng, giá trị và phạm vi MVP | Hoàn thành |
+| [02 — Data Foundation](docs/plans/02-data-foundation.md) | Enriched StatsBomb events, lineup intervals và 360 trong PostgreSQL | Hoàn thành |
+| [03 — SPADL Actions & State Features](docs/plans/03-analytics-features.md) | Chuyển event thành action và feature theo từng trạng thái | Hoàn thành |
+| [04 — VAEP Modeling](docs/plans/04-vaep-modeling.md) | Train `P_score`/`P_concede`, định giá action và tính VAEP/90 | Đã lên kế hoạch |
 
 ## Sản phẩm hướng tới
 
@@ -149,12 +149,15 @@ Get-Content -Raw migrations/001_data_foundation.up.sql |
 
 Get-Content -Raw migrations/002_vaep_event_enrichment.up.sql |
   docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
+
+Get-Content -Raw migrations/003_spadl_analytics.up.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
 ```
 
 ### 4. Kiểm tra dataset trước khi ingest
 
 ```powershell
-py -3.12 scripts/profile_statsbomb.py --strict
+py -3.12 scripts/tools/profile_statsbomb.py --strict
 ```
 
 `baseline: PASS` nghĩa là dữ liệu hiện tại vẫn khớp với manifest đã khóa.
@@ -162,7 +165,7 @@ py -3.12 scripts/profile_statsbomb.py --strict
 ### 5. Ingest toàn bộ 64 trận
 
 ```powershell
-py -3.12 scripts/ingest_all.py
+py -3.12 scripts/01_ingest_statsbomb.py
 ```
 
 Có thể chạy lại lệnh này an toàn. Event đã tồn tại sẽ được nhận diện là deduplicated thay vì được chèn thêm.
@@ -178,30 +181,51 @@ py -3.12 -m unittest discover -s tests -v
 Xem từng trang 100 event của một trận:
 
 ```powershell
-py -3.12 scripts/view_events.py 3857276
+py -3.12 scripts/tools/view_events.py 3857276
 ```
 
 Chỉ xem các cú sút:
 
 ```powershell
-py -3.12 scripts/view_events.py 3857276 --type Shot
+py -3.12 scripts/tools/view_events.py 3857276 --type Shot
 ```
 
 Xem toàn bộ JSON của trang đầu:
 
 ```powershell
-py -3.12 scripts/view_events.py 3857276 --raw --once
+py -3.12 scripts/tools/view_events.py 3857276 --raw --once
 ```
 
-## SPADL và VAEP — các bước kế tiếp
+## SPADL analytics
 
-Plan 03 sẽ chuyển enriched event thành chuỗi hành động SPADL-style với mỗi dòng đại diện cho:
+Tạo baseline actions/features cho toàn bộ dataset:
+
+```powershell
+py -3.12 scripts/02_build_features.py
+```
+
+Bật feature contract StatsBomb 360 riêng:
+
+```powershell
+py -3.12 scripts/02_build_features.py --include-360
+```
+
+Output được lưu trong `analytics_runs`, `analytics_actions`,
+`analytics_action_features` và `artifacts/plan03/`.
+
+## VAEP — bước kế tiếp
+
+Plan 03 dùng `socceraction==1.5.3` chuyển enriched event thành chuỗi SPADL chuẩn,
+với mỗi dòng đại diện cho:
 
 ```text
 match × action
 ```
 
-Mỗi state chứa action hiện tại, ba action trước và context có sẵn tại thời điểm đó: loại/kết quả, tọa độ, possession, tỷ số, thời gian và các feature 360 tùy chọn. Không feature nào được nhìn action tương lai.
+Mỗi state VAEP gồm đúng ba action: action hiện tại (`a0`) và hai action
+trước (`a1`, `a2`). Feature baseline dùng bộ transformer mặc định của
+socceraction; feature 360 vẫn là enrichment tùy chọn. Không feature nào nhìn
+action tương lai.
 
 Đầu ra chính là bảng/file `actions` và `action_features`. Plan 04 dùng chúng để train hai model XGBoost độc lập:
 
@@ -222,16 +246,29 @@ VAEP sau đó được cộng theo cầu thủ và chuẩn hóa trên 90 phút �
 ## Cấu trúc chính
 
 ```text
-plans/                  Kế hoạch và tiêu chí hoàn thành
-datasets/               Manifest khóa dataset
-docs/                   Data dictionary
-migrations/             PostgreSQL schema và rollback
-open-data/              StatsBomb Open Data
-scripts/                Công cụ profile, kiểm tra và ingest
-src/matchmind/data/     Data pipeline
-tests/                  Unit tests cho pipeline
-reports/                Báo cáo profiling và pilot ingestion
+scripts/
+├── 01_ingest_statsbomb.py       StatsBomb → PostgreSQL
+├── 02_build_features.py         PostgreSQL → SPADL → VAEP features
+└── tools/                       Công cụ kiểm tra và debug
+
+src/matchmind/
+├── ingestion/                   Đọc, chuẩn hóa và kiểm tra StatsBomb
+├── feature_engineering/         Chuyển SPADL và tạo feature VAEP
+└── storage/                     PostgreSQL và Parquet
+
+tests/
+├── ingestion/                   Test data ingestion
+└── feature_engineering/         Test SPADL và feature
+
+docs/                            Kiến trúc, data flow và kế hoạch
+migrations/                      PostgreSQL schema và rollback
+datasets/                        Manifest khóa dataset
+open-data/                       StatsBomb Open Data
+artifacts/                       Output Parquet được sinh tự động
+reports/                         Báo cáo profiling và ingestion
 ```
+
+Xem luồng dữ liệu tại [docs/data-flow.md](docs/data-flow.md).
 
 ---
 
