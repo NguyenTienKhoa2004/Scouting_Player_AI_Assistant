@@ -172,7 +172,7 @@ py -3.12 scripts/tools/profile_statsbomb.py --strict
 ### 5. Ingest toàn bộ 64 trận
 
 ```powershell
-py -3.12 -m matchmind.pipelines.ingestion.run
+py -3.12 -m matchmind.ingestion.run
 ```
 
 Có thể chạy lại lệnh này an toàn. Event đã tồn tại sẽ được nhận diện là deduplicated thay vì được chèn thêm.
@@ -208,13 +208,13 @@ py -3.12 scripts/tools/view_events.py 3857276 --raw --once
 Tạo baseline actions/features cho toàn bộ dataset:
 
 ```powershell
-py -3.12 -m matchmind.pipelines.feature_building.run
+py -3.12 -m matchmind.vaep_features.run
 ```
 
 Bật feature contract StatsBomb 360 riêng:
 
 ```powershell
-py -3.12 -m matchmind.pipelines.feature_building.run --include-360
+py -3.12 -m matchmind.vaep_features.run --include-360
 ```
 
 Output được lưu trong `analytics_runs`, `analytics_actions`,
@@ -255,9 +255,13 @@ VAEP sau đó được cộng theo cầu thủ và chuẩn hóa trên 90 phút �
 ```text
 apps/                            Backend và frontend deploy độc lập
 packages/matchmind/              Python package dùng chung
-├── data/                        Ingestion, validation và storage
-├── analytics/features/          SPADL và feature engineering
-├── ml/                          Dataset, training và evaluation
+├── corpus/                      Corpus manifest và match metadata
+├── ingestion/                   Normalize, validate và ghi PostgreSQL
+├── spadl/                       Đọc canonical events và tạo SPADL actions
+├── vaep_features/               Action states và VAEP feature engineering
+├── labeling_and_splitting/      Targets và chronological splits
+├── model_dataset/               Join dữ liệu thành model_dataset.parquet
+├── model_training/              Training và evaluation
 ├── ai/                          AI analyst, prompts và tools
 ├── pipelines/                   Các pipeline entrypoint
 └── shared/                      Config, contracts và logging dùng chung

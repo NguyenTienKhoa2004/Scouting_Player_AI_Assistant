@@ -1,46 +1,69 @@
 # Luồng dữ liệu MatchMind
 
-Project có bốn entrypoint chính và được đọc theo thứ tự từ trên xuống:
+Code được tổ chức theo đúng thứ tự các stage của pipeline:
 
 ```text
 StatsBomb Open Data
         │
         ▼
-matchmind.pipelines.ingestion.run
+matchmind/corpus/
+        └── khóa và kiểm tra tập trận từ manifest
         │
-        ├── matchmind/data/ingestion/reader.py
-        ├── matchmind/data/ingestion/normalizer.py
-        ├── matchmind/data/ingestion/validator.py
-        └── matchmind/data/storage/postgres/ingestion_writer.py
+        ▼
+matchmind/ingestion/
+        ├── reader.py
+        ├── normalizer.py
+        ├── validator.py
+        ├── service.py
+        └── postgres_writer.py
         │
         ▼
 PostgreSQL: events + lineup + event_360
         │
         ▼
-matchmind.pipelines.feature_building.run
-        │
-        ├── matchmind/data/storage/postgres/feature_reader.py
-        ├── matchmind/validator/spadl_input_validator.py
-        ├── matchmind/analytics/features/spadl_converter.py
-        ├── matchmind/analytics/features/action_state.py
-        ├── matchmind/analytics/features/vaep_features.py
-        ├── matchmind/analytics/features/features_360.py (tùy chọn)
-        └── matchmind/analytics/features/builder.py
-        │
-        ├── PostgreSQL: analytics_actions + analytics_action_features
-        └── Parquet: actions.parquet + action_features.parquet
+matchmind/spadl/
+        ├── input_reader.py
+        ├── input_validator.py
+        └── converter.py
         │
         ▼
-matchmind.pipelines.model_preparation.run
-        │
-        └── matchmind/ml/         labels, splits, model dataset
+matchmind/vaep_features/
+        ├── action_state.py
+        ├── feature_builder.py
+        ├── features_360.py (tùy chọn)
+        ├── builder.py
+        └── artifacts.py
         │
         ▼
-matchmind.pipelines.model_training.run
+Parquet: actions.parquet + action_features.parquet
         │
-        └── matchmind/ml/         training, evaluation
+        ▼
+matchmind/labeling_and_splitting/
+        ├── targets.py
+        └── splits.py
+        │
+        ▼
+matchmind/model_dataset/
+        ├── builder.py
+        ├── preparation.py
+        └── artifacts.py
+        │
+        ▼
+model_dataset.parquet
+        │
+        ▼
+matchmind/model_training/
 ```
 
-Mỗi feature row sử dụng đúng ba action: action hiện tại `a0` và hai action
-trước đó `a1`, `a2`. Thư mục `scripts/tools/` chỉ chứa công cụ kiểm tra và
-không phải entrypoint của pipeline chính.
+Các entrypoint chạy tuần tự:
+
+```text
+matchmind.ingestion.run
+matchmind.vaep_features.run
+matchmind.model_dataset.run
+matchmind.model_training.run
+```
+
+Mỗi feature row dùng đúng ba action: action hiện tại `a0` và hai action trước đó
+`a1`, `a2`. Thư mục `scripts/tools/` chỉ chứa công cụ kiểm tra và debug, không
+phải entrypoint của pipeline chính.

@@ -1,1 +1,0 @@
-"""StatsBomb ingestion entrypoint."""

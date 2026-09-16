@@ -12,10 +12,10 @@ cách chạy đơn giản. Muốn chạy riêng một công đoạn thì dùng c
 Chạy pipeline theo thứ tự:
 
 ```powershell
-py -3.12 -m matchmind.pipelines.ingestion.run
-py -3.12 -m matchmind.pipelines.feature_building.run --corpus-manifest configs/datasets/vaep-training-corpus-v1.json
-py -3.12 -m matchmind.pipelines.model_preparation.run
-py -3.12 -m matchmind.pipelines.model_training.run
+py -3.12 -m matchmind.ingestion.run
+py -3.12 -m matchmind.vaep_features.run --corpus-manifest configs/datasets/vaep-training-corpus-v1.json
+py -3.12 -m matchmind.model_dataset.run
+py -3.12 -m matchmind.model_training.run
 ```
 
 Pipeline thứ nhất đưa StatsBomb vào PostgreSQL. Pipeline thứ hai chuyển event

@@ -11,7 +11,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
 
-from matchmind.data.ingestion import RawDataError, StatsBombRawReader  # noqa: E402
+from matchmind.ingestion import RawDataError, StatsBombRawReader  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

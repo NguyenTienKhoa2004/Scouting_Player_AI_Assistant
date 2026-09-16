@@ -411,16 +411,16 @@ dependency, and model versions.
 Suggested implementation boundaries:
 
 ```text
-packages/matchmind/src/matchmind/ml/feature_artifacts.py
-packages/matchmind/src/matchmind/ml/targets.py
-packages/matchmind/src/matchmind/ml/splits.py
-packages/matchmind/src/matchmind/ml/dataset.py
-packages/matchmind/src/matchmind/ml/logistic_baseline.py
-packages/matchmind/src/matchmind/ml/evaluation.py
-packages/matchmind/src/matchmind/ml/valuation.py
-packages/matchmind/src/matchmind/ml/aggregation.py
-packages/matchmind/src/matchmind/data/storage/postgres/vaep_writer.py
-packages/matchmind/src/matchmind/pipelines/model_training/run.py
+packages/matchmind/src/matchmind/vaep_features/artifact_loader.py
+packages/matchmind/src/matchmind/labeling_and_splitting/targets.py
+packages/matchmind/src/matchmind/labeling_and_splitting/splits.py
+packages/matchmind/src/matchmind/model_dataset/builder.py
+packages/matchmind/src/matchmind/model_training/logistic_baseline.py
+packages/matchmind/src/matchmind/model_training/evaluation.py
+packages/matchmind/src/matchmind/model_training/valuation.py
+packages/matchmind/src/matchmind/model_training/aggregation.py
+packages/matchmind/src/matchmind/model_training/postgres_writer.py
+packages/matchmind/src/matchmind/model_training/run.py
 infra/db/migrations/004_vaep_modeling.{up,down}.sql
 tests/modeling/
 ```

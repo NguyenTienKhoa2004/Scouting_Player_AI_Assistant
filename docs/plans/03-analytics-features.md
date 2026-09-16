@@ -128,7 +128,7 @@ py -3.12 scripts/tools/validate_spadl_input.py --match-id 3857276 --json
 ```
 
 Tasks 2-3 are implemented by the adapter in
-`packages/matchmind/src/matchmind/analytics/features/spadl_converter.py`. It reconstructs socceraction's
+`packages/matchmind/src/matchmind/spadl/converter.py`. It reconstructs socceraction's
 StatsBomb dataframe from preserved raw payloads, calls the official converter,
 then restores source-event traceability and emits a deterministic report.
 
@@ -139,7 +139,7 @@ features use separate immutable version identifiers. The baseline uses
 
 Task 7 is implemented by migration `003_spadl_analytics`,
 `PostgresAnalyticsWriter`, `ParquetArtifactWriter`, and the
-`packages/matchmind/src/matchmind/pipelines/feature_building/run.py` orchestrator. Task 8 is covered by adapter,
+`packages/matchmind/src/matchmind/vaep_features/run.py` orchestrator. Task 8 is covered by adapter,
 state/feature, temporal-safety, 360, and Parquet tests. Exact semantics are
 documented in `docs/plan03-feature-contracts.md`.
 

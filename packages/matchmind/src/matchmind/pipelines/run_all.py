@@ -21,12 +21,12 @@ from matchmind.shared.paths import PROJECT_ROOT  # noqa: E402
 STEPS = (
     (
         "Ingesting data",
-        "matchmind.pipelines.ingestion.run",
+        "matchmind.ingestion.run",
         ("--corpus-manifest", str(CORPUS_MANIFEST)),
     ),
     (
         "Building features",
-        "matchmind.pipelines.feature_building.run",
+        "matchmind.vaep_features.run",
         (
             "--corpus-manifest",
             str(CORPUS_MANIFEST),
@@ -34,8 +34,8 @@ STEPS = (
             str(FEATURE_OUTPUT),
         ),
     ),
-    ("Preparing model dataset", "matchmind.pipelines.model_preparation.run", ()),
-    ("Training models", "matchmind.pipelines.model_training.run", ()),
+    ("Preparing model dataset", "matchmind.model_dataset.run", ()),
+    ("Training models", "matchmind.model_training.run", ()),
 )
 
 

@@ -11,7 +11,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
 
-from matchmind.ml.corpus import load_training_corpus_manifest  # noqa: E402
+from matchmind.corpus.training_dataset_validator import (  # noqa: E402
+    load_training_corpus_manifest,
+)
 
 
 def parse_args() -> argparse.Namespace:

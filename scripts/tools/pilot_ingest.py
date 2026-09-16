@@ -11,14 +11,14 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
 
-from matchmind.data.ingestion import (  # noqa: E402
+from matchmind.ingestion import (  # noqa: E402
     CanonicalEventValidator,
     EventValidationContext,
     StatsBombEventNormalizer,
     StatsBombIngestionService,
     StatsBombRawReader,
 )
-from matchmind.data.storage.postgres.ingestion_writer import (  # noqa: E402
+from matchmind.ingestion.postgres_writer import (  # noqa: E402
     PostgresDataWriter,
     connect,
 )
