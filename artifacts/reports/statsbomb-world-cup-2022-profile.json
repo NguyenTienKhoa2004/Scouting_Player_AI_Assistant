@@ -1,0 +1,140 @@
+{
+  "selection": {
+    "competition_id": 43,
+    "season_id": 106,
+    "match_file": "C:\\Users\\as\\Desktop\\AI_FOOTBALL_ANALYSIS\\data\\external\\statsbomb-open-data\\data\\matches\\43\\106.json",
+    "is_pinned_selection": true
+  },
+  "source_versions": [
+    {
+      "data_version": "1.1.0",
+      "shot_fidelity_version": "2",
+      "xy_fidelity_version": "2"
+    }
+  ],
+  "files": {
+    "matches": 1,
+    "events": 64,
+    "lineups": 64,
+    "three_sixty": 64,
+    "missing_event_match_ids": [],
+    "missing_lineup_match_ids": [],
+    "missing_three_sixty_match_ids": []
+  },
+  "counts": {
+    "matches": 64,
+    "raw_events": 234637,
+    "unique_source_event_ids": 234637,
+    "duplicate_source_event_occurrences": 0,
+    "event_types": 33,
+    "shots": 1494,
+    "shots_with_xg": 1494,
+    "three_sixty_frames": 203882,
+    "linked_three_sixty_frames": 203882,
+    "duplicate_three_sixty_event_ids": 0
+  },
+  "reconciliation": {
+    "equation": "raw_events = unique_source_event_ids + duplicate_occurrences",
+    "passed": true
+  },
+  "event_type_counts": {
+    "50/50": 236,
+    "Bad Behaviour": 44,
+    "Ball Receipt*": 63699,
+    "Ball Recovery": 5821,
+    "Block": 2386,
+    "Carry": 53764,
+    "Clearance": 2684,
+    "Dispossessed": 1431,
+    "Dribble": 1793,
+    "Dribbled Past": 1036,
+    "Duel": 4389,
+    "Error": 28,
+    "Foul Committed": 1775,
+    "Foul Won": 1693,
+    "Goal Keeper": 1790,
+    "Half End": 286,
+    "Half Start": 286,
+    "Injury Stoppage": 403,
+    "Interception": 1371,
+    "Miscontrol": 1755,
+    "Offside": 26,
+    "Own Goal Against": 3,
+    "Own Goal For": 3,
+    "Pass": 68515,
+    "Player Off": 74,
+    "Player On": 74,
+    "Pressure": 16554,
+    "Referee Ball-Drop": 162,
+    "Shield": 104,
+    "Shot": 1494,
+    "Starting XI": 128,
+    "Substitution": 587,
+    "Tactical Shift": 243
+  },
+  "period_counts": {
+    "1": 116337,
+    "2": 112708,
+    "3": 2885,
+    "4": 2601,
+    "5": 106
+  },
+  "maximum_minute": 127,
+  "missing_player_by_event_type": {
+    "Half End": 286,
+    "Half Start": 286,
+    "Own Goal For": 3,
+    "Referee Ball-Drop": 162,
+    "Starting XI": 128,
+    "Tactical Shift": 243
+  },
+  "missing_location_by_event_type": {
+    "Bad Behaviour": 44,
+    "Half End": 286,
+    "Half Start": 286,
+    "Injury Stoppage": 403,
+    "Player Off": 74,
+    "Player On": 74,
+    "Starting XI": 128,
+    "Substitution": 587,
+    "Tactical Shift": 243
+  },
+  "missing_required_fields": {},
+  "coordinates": {
+    "source_pitch": {
+      "x": [
+        0,
+        120
+      ],
+      "y": [
+        0,
+        80
+      ]
+    },
+    "start_location_observed": {
+      "x_min": 0.1,
+      "x_max": 120.0,
+      "y_min": 0.1,
+      "y_max": 80.0
+    },
+    "start_location_problems": {},
+    "endpoint_observed": {
+      "x_min": 0.1,
+      "x_max": 120.0,
+      "y_min": 0.1,
+      "y_max": 80.0
+    },
+    "endpoint_counts": {
+      "carry": 53764,
+      "goalkeeper": 943,
+      "pass": 68515,
+      "shot": 1494
+    },
+    "endpoint_problems": {}
+  },
+  "duplicate_source_event_ids": {},
+  "baseline_check": {
+    "passed": true,
+    "mismatches": []
+  }
+}

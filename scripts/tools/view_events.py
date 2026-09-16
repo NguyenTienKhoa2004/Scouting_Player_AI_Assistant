@@ -16,7 +16,14 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_EVENTS_DIR = PROJECT_ROOT / "open-data" / "data" / "events"
+DEFAULT_EVENTS_DIR = (
+    PROJECT_ROOT
+    / "data"
+    / "external"
+    / "statsbomb-open-data"
+    / "data"
+    / "events"
+)
 
 
 def parse_args() -> argparse.Namespace:

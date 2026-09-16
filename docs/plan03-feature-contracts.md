@@ -56,6 +56,6 @@ Artifacts created by the old custom `statsbomb-spadl-v1` contract are obsolete
 and must not be mixed with this contract. Rebuild with:
 
 ```powershell
-py -3.12 scripts/02_build_features.py
-py -3.12 scripts/02_build_features.py --include-360
+py -3.12 -m matchmind.pipelines.feature_building.run
+py -3.12 -m matchmind.pipelines.feature_building.run --include-360
 ```

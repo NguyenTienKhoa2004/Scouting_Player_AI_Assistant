@@ -31,7 +31,7 @@ services:
       - "${MATCHMIND_PGADMIN_PORT:-5050}:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
-      - ./config/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./infra/pgadmin/servers.json:/pgadmin4/servers.json:ro
     depends_on:
       postgres:
         condition: service_healthy

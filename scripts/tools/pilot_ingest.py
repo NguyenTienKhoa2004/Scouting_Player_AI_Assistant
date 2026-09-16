@@ -9,16 +9,16 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
 
-from matchmind.ingestion import (  # noqa: E402
+from matchmind.data.ingestion import (  # noqa: E402
     CanonicalEventValidator,
     EventValidationContext,
     StatsBombEventNormalizer,
     StatsBombIngestionService,
     StatsBombRawReader,
 )
-from matchmind.storage.postgres.ingestion_writer import (  # noqa: E402
+from matchmind.data.storage.postgres.ingestion_writer import (  # noqa: E402
     PostgresDataWriter,
     connect,
 )
@@ -30,7 +30,7 @@ DEFAULT_DATABASE_URL = (
 DEFAULT_PILOT_MATCH_IDS = [3857276, 3869685]
 DATASET_ID = "statsbomb-open-data-fifa-world-cup-2022"
 SOURCE_VERSION = "b0bc9f22dd77c206ddedc1d742893b3bbe64baec"
-MANIFEST_PATH = "datasets/statsbomb-world-cup-2022.yaml"
+MANIFEST_PATH = "configs/datasets/statsbomb-world-cup-2022.yaml"
 
 
 def parse_args() -> argparse.Namespace:

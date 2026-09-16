@@ -47,7 +47,7 @@ Dataset hiện tại chỉ có World Cup 2022 nên bộ lọc giải đấu mớ
 
 ## Dataset
 
-MatchMind hiện sử dụng bộ [StatsBomb Open Data](https://github.com/statsbomb/open-data) của FIFA World Cup 2022. Dataset được khóa bằng [manifest](datasets/statsbomb-world-cup-2022.yaml), bao gồm commit nguồn, phiên bản schema, phạm vi dữ liệu và checksum.
+MatchMind hiện sử dụng bộ [StatsBomb Open Data](https://github.com/statsbomb/open-data) của FIFA World Cup 2022. Dataset được khóa bằng [manifest](configs/datasets/statsbomb-world-cup-2022.yaml), bao gồm commit nguồn, phiên bản schema, phạm vi dữ liệu và checksum. Corpus ứng viên cho VAEP production được khóa riêng trong [vaep-training-corpus-v1.json](configs/datasets/vaep-training-corpus-v1.json), gồm 1.831 trận nam thuộc tám giải và mười cặp giải-mùa; model vẫn mang nhãn experimental cho đến khi toàn bộ corpus này xuất hiện trong artifact Plan 03 và vượt qua production gate.
 
 | Nội dung | Kết quả đã xác minh |
 |---|---:|
@@ -118,11 +118,18 @@ Các bảng PostgreSQL chính:
 | `invalid_events` | Record bị từ chối cùng lý do |
 | `ingestion_runs` | Phiên bản, trạng thái và số liệu mỗi lần ingest |
 
-Chi tiết mapping StatsBomb → canonical nằm trong [data dictionary](docs/statsbomb-data-dictionary.md). Schema nền tảng nằm trong [migration 001](migrations/001_data_foundation.up.sql), còn enrichment VAEP/360 nằm trong [migration 002](migrations/002_vaep_event_enrichment.up.sql).
+Chi tiết mapping StatsBomb → canonical nằm trong [data dictionary](docs/data_dictionary/statsbomb.md). Schema nền tảng nằm trong [migration 001](infra/db/migrations/001_data_foundation.up.sql), còn enrichment VAEP/360 nằm trong [migration 002](infra/db/migrations/002_vaep_event_enrichment.up.sql).
 
 ## Chạy project
 
 Yêu cầu: Python 3.12 và Docker Desktop.
+
+Sau khi cài dependency, khởi động PostgreSQL và áp dụng migration, có thể chạy
+toàn bộ ingestion → features → model preparation → baseline training bằng:
+
+```powershell
+py -3.12 -m matchmind.pipelines.run_all
+```
 
 ### 1. Cài dependency
 
@@ -144,13 +151,13 @@ docker compose ps
 ### 3. Tạo schema ở lần chạy đầu tiên
 
 ```powershell
-Get-Content -Raw migrations/001_data_foundation.up.sql |
+Get-Content -Raw infra/db/migrations/001_data_foundation.up.sql |
   docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
 
-Get-Content -Raw migrations/002_vaep_event_enrichment.up.sql |
+Get-Content -Raw infra/db/migrations/002_vaep_event_enrichment.up.sql |
   docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
 
-Get-Content -Raw migrations/003_spadl_analytics.up.sql |
+Get-Content -Raw infra/db/migrations/003_spadl_analytics.up.sql |
   docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
 ```
 
@@ -165,7 +172,7 @@ py -3.12 scripts/tools/profile_statsbomb.py --strict
 ### 5. Ingest toàn bộ 64 trận
 
 ```powershell
-py -3.12 scripts/01_ingest_statsbomb.py
+py -3.12 -m matchmind.pipelines.ingestion.run
 ```
 
 Có thể chạy lại lệnh này an toàn. Event đã tồn tại sẽ được nhận diện là deduplicated thay vì được chèn thêm.
@@ -201,17 +208,17 @@ py -3.12 scripts/tools/view_events.py 3857276 --raw --once
 Tạo baseline actions/features cho toàn bộ dataset:
 
 ```powershell
-py -3.12 scripts/02_build_features.py
+py -3.12 -m matchmind.pipelines.feature_building.run
 ```
 
 Bật feature contract StatsBomb 360 riêng:
 
 ```powershell
-py -3.12 scripts/02_build_features.py --include-360
+py -3.12 -m matchmind.pipelines.feature_building.run --include-360
 ```
 
 Output được lưu trong `analytics_runs`, `analytics_actions`,
-`analytics_action_features` và `artifacts/plan03/`.
+`analytics_action_features` và `artifacts/features/plan03/`.
 
 ## VAEP — bước kế tiếp
 
@@ -246,29 +253,26 @@ VAEP sau đó được cộng theo cầu thủ và chuẩn hóa trên 90 phút �
 ## Cấu trúc chính
 
 ```text
-scripts/
-├── 01_ingest_statsbomb.py       StatsBomb → PostgreSQL
-├── 02_build_features.py         PostgreSQL → SPADL → VAEP features
-└── tools/                       Công cụ kiểm tra và debug
+apps/                            Backend và frontend deploy độc lập
+packages/matchmind/              Python package dùng chung
+├── data/                        Ingestion, validation và storage
+├── analytics/features/          SPADL và feature engineering
+├── ml/                          Dataset, training và evaluation
+├── ai/                          AI analyst, prompts và tools
+├── pipelines/                   Các pipeline entrypoint
+└── shared/                      Config, contracts và logging dùng chung
 
-src/matchmind/
-├── ingestion/                   Đọc, chuẩn hóa và kiểm tra StatsBomb
-├── feature_engineering/         Chuyển SPADL và tạo feature VAEP
-└── storage/                     PostgreSQL và Parquet
-
-tests/
-├── ingestion/                   Test data ingestion
-└── feature_engineering/         Test SPADL và feature
-
-docs/                            Kiến trúc, data flow và kế hoạch
-migrations/                      PostgreSQL schema và rollback
-datasets/                        Manifest khóa dataset
-open-data/                       StatsBomb Open Data
-artifacts/                       Output Parquet được sinh tự động
-reports/                         Báo cáo profiling và ingestion
+configs/datasets/                Manifest khóa phiên bản dataset
+data/external/                   StatsBomb Open Data, không commit vào Git
+infra/db/migrations/             PostgreSQL schema và rollback
+infra/pgadmin/                   Cấu hình pgAdmin
+tests/                           Unit, integration và end-to-end tests
+scripts/tools/                   Công cụ kiểm tra và debug
+artifacts/                       Features, models, runs và reports sinh tự động
+docs/                            Kiến trúc, data dictionary và kế hoạch
 ```
 
-Xem luồng dữ liệu tại [docs/data-flow.md](docs/data-flow.md).
+Xem luồng dữ liệu tại [docs/architecture/data-flow.md](docs/architecture/data-flow.md).
 
 ---
 

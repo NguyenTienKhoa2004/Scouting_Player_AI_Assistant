@@ -116,12 +116,9 @@ The quality report must include event-to-action coverage, excluded-event counts,
 ### Task 1 implementation
 
 The source input boundary is implemented by `PostgresSpadlInputReader` and
-`SpadlInputValidator`. It verifies required PostgreSQL columns and types,
-loads events in authoritative `source_event_index` order, then fails before
-conversion on duplicate IDs/order, inconsistent possession teams, missing
-actionable lineup participants, subtype-preservation errors, or broken 360
-links. Late duplicate ball receipts are exempt from monotonic possession checks;
-source-reversed shootout tactical intervals are retained as explicit warnings.
+`validate_spadl_input`. PostgreSQL and ingestion own row-level validation; this
+boundary only checks cross-record possession, lineup, and 360 invariants before
+conversion. Source-reversed tactical intervals remain explicit warnings.
 
 Run it for the full database or selected matches:
 
@@ -131,7 +128,7 @@ py -3.12 scripts/tools/validate_spadl_input.py --match-id 3857276 --json
 ```
 
 Tasks 2-3 are implemented by the adapter in
-`src/matchmind/feature_engineering/spadl_converter.py`. It reconstructs socceraction's
+`packages/matchmind/src/matchmind/analytics/features/spadl_converter.py`. It reconstructs socceraction's
 StatsBomb dataframe from preserved raw payloads, calls the official converter,
 then restores source-event traceability and emits a deterministic report.
 
@@ -142,7 +139,7 @@ features use separate immutable version identifiers. The baseline uses
 
 Task 7 is implemented by migration `003_spadl_analytics`,
 `PostgresAnalyticsWriter`, `ParquetArtifactWriter`, and the
-`scripts/02_build_features.py` orchestrator. Task 8 is covered by adapter,
+`packages/matchmind/src/matchmind/pipelines/feature_building/run.py` orchestrator. Task 8 is covered by adapter,
 state/feature, temporal-safety, 360, and Parquet tests. Exact semantics are
 documented in `docs/plan03-feature-contracts.md`.
 

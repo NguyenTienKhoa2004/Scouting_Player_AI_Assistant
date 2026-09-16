@@ -1,7 +1,7 @@
 """Create a repeatable profile of a StatsBomb competition-season dataset.
 
 The default selection is the dataset pinned in
-datasets/statsbomb-world-cup-2022.yaml.
+configs/datasets/statsbomb-world-cup-2022.yaml.
 
 Examples:
     py -3.12 scripts/tools/profile_statsbomb.py
@@ -21,9 +21,14 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DATA_ROOT = PROJECT_ROOT / "open-data" / "data"
+DEFAULT_DATA_ROOT = (
+    PROJECT_ROOT / "data" / "external" / "statsbomb-open-data" / "data"
+)
 DEFAULT_OUTPUT = (
-    PROJECT_ROOT / "reports" / "statsbomb-world-cup-2022-profile.json"
+    PROJECT_ROOT
+    / "artifacts"
+    / "reports"
+    / "statsbomb-world-cup-2022-profile.json"
 )
 
 PINNED_SELECTION = {

@@ -10,13 +10,13 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
 
-from matchmind.feature_engineering import SpadlInputContractError  # noqa: E402
-from matchmind.storage.postgres.feature_reader import (  # noqa: E402
+from matchmind.analytics.features import SpadlInputContractError  # noqa: E402
+from matchmind.data.storage.postgres.feature_reader import (  # noqa: E402
     PostgresSpadlInputReader,
 )
-from matchmind.storage.postgres.ingestion_writer import connect  # noqa: E402
+from matchmind.data.storage.postgres.ingestion_writer import connect  # noqa: E402
 
 
 DEFAULT_DATABASE_URL = "postgresql://matchmind:1234567@localhost:5433/matchmind"

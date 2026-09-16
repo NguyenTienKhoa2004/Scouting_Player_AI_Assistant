@@ -15,7 +15,7 @@ Plan 02 owns faithful source ingestion. It does not create model actions or VAEP
 
 ## Dataset strategy
 
-Use the complete StatsBomb FIFA World Cup 2022 selection pinned in [`datasets/statsbomb-world-cup-2022.yaml`](../datasets/statsbomb-world-cup-2022.yaml) as the first enrichment and conversion fixture:
+Use the complete StatsBomb FIFA World Cup 2022 selection pinned in [`configs/datasets/statsbomb-world-cup-2022.yaml`](../../configs/datasets/statsbomb-world-cup-2022.yaml) as the first enrichment and conversion fixture:
 
 ```text
 64 matches
@@ -101,7 +101,7 @@ Plan 03 derives typed spatial features from these snapshots. Plan 02 preserves a
 7. Upsert idempotently on `(source, source_event_id)`.
 8. Record invalid source rows and reasons without silently dropping them.
 
-The StatsBomb mapping and null rules belong in [`docs/statsbomb-data-dictionary.md`](../docs/statsbomb-data-dictionary.md).
+The StatsBomb mapping and null rules belong in [`docs/data_dictionary/statsbomb.md`](../data_dictionary/statsbomb.md).
 
 ## Validation
 
@@ -122,15 +122,15 @@ The StatsBomb mapping and null rules belong in [`docs/statsbomb-data-dictionary.
 Keep the completed migration files unchanged:
 
 ```text
-migrations/001_data_foundation.up.sql
-migrations/001_data_foundation.down.sql
+infra/db/migrations/001_data_foundation.up.sql
+infra/db/migrations/001_data_foundation.down.sql
 ```
 
 Add a forward and rollback migration:
 
 ```text
-migrations/002_vaep_event_enrichment.up.sql
-migrations/002_vaep_event_enrichment.down.sql
+infra/db/migrations/002_vaep_event_enrichment.up.sql
+infra/db/migrations/002_vaep_event_enrichment.down.sql
 ```
 
 Migration `002` must:

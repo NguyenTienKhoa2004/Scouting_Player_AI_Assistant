@@ -1,0 +1,1 @@
+"""Analytics feature-building entrypoint."""

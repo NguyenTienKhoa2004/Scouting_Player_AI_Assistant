@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+pythonpath = ["packages/matchmind/src"]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["matchmind"]

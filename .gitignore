@@ -20,10 +20,15 @@ htmlcov/
 build/
 dist/
 *.egg-info/
-artifacts/
+artifacts/*
+!artifacts/reports/
+!artifacts/reports/**
 
-# Large raw data (download it separately)
-open-data/
+# Large data (download or generate it separately)
+data/raw/**
+data/interim/**
+data/processed/**
+data/external/**
 
 # Logs and temporary files
 *.log
