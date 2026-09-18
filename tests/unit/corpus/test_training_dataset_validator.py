@@ -1,19 +1,29 @@
 from __future__ import annotations
 
+import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from matchmind.corpus.training_dataset_validator import (  # noqa: E402
+    TRAINING_CORPUS_SCHEMA_VERSION,
+    TrainingCorpusError,
     load_training_corpus_manifest,
 )
+from matchmind.corpus.bronze import (  # noqa: E402
+    BronzeSourceError,
+    validate_bronze_repository,
+)
 from matchmind.model_dataset.training_manifest import (  # noqa: E402
-    ProductionPromotionBlocked,
-    require_corpus_adequate_for_promotion,
+    TrainingCorpusNotReady,
+    require_training_corpus_ready,
 )
 
 
@@ -40,6 +50,69 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         self.assertEqual(
             len({match.competition_id for match in self.corpus.matches}), 8
         )
+        self.assertEqual(TRAINING_CORPUS_SCHEMA_VERSION, 2)
+        self.assertIsNotNone(self.corpus.bronze)
+        assert self.corpus.bronze is not None
+        self.assertEqual(self.corpus.bronze.source_format, "statsbomb-open-data-json")
+        self.assertTrue(self.corpus.bronze.immutable)
+        self.assertEqual(
+            self.corpus.bronze.data_root,
+            PROJECT_ROOT / "data" / "bronze" / "statsbomb-open-data" / "data",
+        )
+        self.assertTrue(
+            all(
+                selection.data_root == self.corpus.bronze.data_root
+                for selection in self.corpus.selections
+            )
+        )
+
+    def test_bronze_repository_matches_pinned_source_commit(self) -> None:
+        assert self.corpus.bronze is not None
+        report = validate_bronze_repository(
+            self.corpus.bronze.data_root,
+            str(self.corpus.source["git_commit"]),
+        )
+
+        self.assertTrue(report.tracked_tree_clean)
+        self.assertEqual(report.actual_commit, report.expected_commit)
+
+    def test_bronze_repository_rejects_wrong_commit(self) -> None:
+        expected = "a" * 40
+        with patch(
+            "matchmind.corpus.bronze._git",
+            return_value="b" * 40,
+        ):
+            with self.assertRaisesRegex(BronzeSourceError, "commit mismatch"):
+                validate_bronze_repository(PROJECT_ROOT / "data", expected)
+
+    def test_bronze_repository_rejects_local_changes(self) -> None:
+        expected = "a" * 40
+        with patch(
+            "matchmind.corpus.bronze._git",
+            side_effect=[expected, " M data/events/1.json"],
+        ):
+            with self.assertRaisesRegex(BronzeSourceError, "local changes"):
+                validate_bronze_repository(PROJECT_ROOT / "data", expected)
+
+    def test_manifest_rejects_selection_path_outside_bronze(self) -> None:
+        manifest = json.loads(CORPUS_MANIFEST.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory(dir=PROJECT_ROOT) as temporary:
+            directory = Path(temporary)
+            bronze_root = PROJECT_ROOT / "data" / "bronze" / "statsbomb-open-data" / "data"
+            manifest["bronze"]["data_root"] = os.path.relpath(
+                bronze_root,
+                directory,
+            )
+            manifest["source"]["license_file"] = os.path.relpath(
+                bronze_root.parent / "LICENSE.pdf",
+                directory,
+            )
+            manifest["selections"][0]["matches_path"] = "../LICENSE.pdf"
+            path = directory / "corpus.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+
+            with self.assertRaisesRegex(TrainingCorpusError, "escapes bronze.data_root"):
+                load_training_corpus_manifest(path)
 
     def test_complete_corpus_with_adequate_splits_passes_gate(self) -> None:
         assessment = self.corpus.assess(
@@ -68,18 +141,16 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         self.assertIn("complete_declared_corpus", assessment["blockers"])
         self.assertIn("test.minimum_concedes_positive", assessment["blockers"])
 
-    def test_promotion_guard_rejects_inadequate_corpus(self) -> None:
+    def test_training_guard_rejects_inadequate_corpus(self) -> None:
         manifest = {
-            "production_promotion": {
-                "corpus_adequate": False,
-                "blockers": ["corpus:minimum_matches"],
-            }
+            "ready_for_training": False,
+            "training_blockers": ["minimum_matches"],
         }
 
         with self.assertRaisesRegex(
-            ProductionPromotionBlocked, "adequate materialized corpus"
+            TrainingCorpusNotReady, "not ready"
         ):
-            require_corpus_adequate_for_promotion(manifest)
+            require_training_corpus_ready(manifest)
 
     @staticmethod
     def _split_manifest(*, matches: int, positives: int) -> dict[str, object]:

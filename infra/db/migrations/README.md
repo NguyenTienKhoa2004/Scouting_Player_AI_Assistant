@@ -1,6 +1,6 @@
 # Database migrations
 
-## Apply migrations 001, 002, and 003
+## Apply migrations 001 through 005
 
 Start PostgreSQL:
 
@@ -19,6 +19,12 @@ Get-Content -Raw infra/db/migrations/002_vaep_event_enrichment.up.sql |
 
 Get-Content -Raw infra/db/migrations/003_spadl_analytics.up.sql |
   docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
+
+Get-Content -Raw infra/db/migrations/004_medallion_silver.up.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
+
+Get-Content -Raw infra/db/migrations/005_medallion_gold.up.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
 ```
 
 Migration `002` preserves existing event rows and adds VAEP-ready event fields,
@@ -28,7 +34,30 @@ after applying it to populate the new columns.
 Migration `003` adds versioned analytics runs, SPADL actions with per-action
 state, and semantic feature rows.
 
+Migration `004` promotes validated canonical tables into the `silver` schema,
+run metadata into `meta`, and rejected records into `quarantine`. It moves the
+existing tables without rebuilding or copying their rows.
+
+Migration `005` promotes SPADL actions and action features into `gold`, and
+moves analytics-run lineage into `meta`. It also preserves all existing rows.
+
+## Roll back migration 005
+
+```powershell
+Get-Content -Raw infra/db/migrations/005_medallion_gold.down.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
+```
+
+## Roll back migration 004
+
+```powershell
+Get-Content -Raw infra/db/migrations/004_medallion_silver.down.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
+```
+
 ## Roll back migration 003
+
+Roll back migrations `005` and `004` first.
 
 ```powershell
 Get-Content -Raw infra/db/migrations/003_spadl_analytics.down.sql |

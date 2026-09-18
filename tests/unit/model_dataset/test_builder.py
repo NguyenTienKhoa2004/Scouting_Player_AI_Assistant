@@ -10,10 +10,10 @@ import pyarrow as pa
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from matchmind.vaep_features.feature_builder import BASE_FEATURE_VERSION  # noqa: E402
-from matchmind.vaep_features.artifact_loader import baseline_feature_allowlist  # noqa: E402
+from matchmind.vaep_features.feature_dataset_loader import baseline_feature_allowlist  # noqa: E402
 from matchmind.model_dataset.builder import (  # noqa: E402
     MODEL_DATASET_VERSION,
     ModelDatasetBuilder,
@@ -64,13 +64,8 @@ class ModelDatasetBuilderTests(unittest.TestCase):
         )
         self.assertEqual(result.model_matrix(split="train").num_rows, 1)
         self.assertEqual(
-            result.allowlist_manifest["selection_policy"],
-            "explicit_allowlist_only",
-        )
-        self.assertFalse(
-            result.allowlist_manifest["checks"][
-                "identifiers_or_metadata_in_model_matrix"
-            ]
+            result.allowlist_manifest["feature_count"],
+            len(self.allowlist),
         )
 
     def test_extra_dataset_columns_still_cannot_enter_model_matrix(self) -> None:

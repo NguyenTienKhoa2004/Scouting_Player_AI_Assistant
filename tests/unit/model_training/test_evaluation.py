@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from matchmind.model_training.evaluation import binary_probability_report  # noqa: E402
 

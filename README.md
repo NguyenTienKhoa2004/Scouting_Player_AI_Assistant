@@ -47,7 +47,16 @@ Dataset hiện tại chỉ có World Cup 2022 nên bộ lọc giải đấu mớ
 
 ## Dataset
 
-MatchMind hiện sử dụng bộ [StatsBomb Open Data](https://github.com/statsbomb/open-data) của FIFA World Cup 2022. Dataset được khóa bằng [manifest](configs/datasets/statsbomb-world-cup-2022.yaml), bao gồm commit nguồn, phiên bản schema, phạm vi dữ liệu và checksum. Corpus ứng viên cho VAEP production được khóa riêng trong [vaep-training-corpus-v1.json](configs/datasets/vaep-training-corpus-v1.json), gồm 1.831 trận nam thuộc tám giải và mười cặp giải-mùa; model vẫn mang nhãn experimental cho đến khi toàn bộ corpus này xuất hiện trong artifact Plan 03 và vượt qua production gate.
+MatchMind sử dụng [StatsBomb Open Data](https://github.com/statsbomb/open-data) được khóa bằng [vaep-training-corpus-v1.json](configs/datasets/vaep-training-corpus-v1.json). Đây là manifest nguồn duy nhất cho pipeline, gồm 1.831 trận nam thuộc tám giải và mười cặp giải-mùa trong giai đoạn 2015–2024; World Cup 2022 là một selection gồm 64 trận trong corpus này.
+
+Dữ liệu nguồn nằm trong Bronze layer tại `data/bronze/statsbomb-open-data/` và
+được giữ nguyên theo định dạng của nhà cung cấp. Trước ingestion, pipeline kiểm
+tra commit Git, working tree, cấu trúc thư mục, manifest, checksum và các quan hệ
+raw. Xem [Bronze contract](docs/architecture/bronze-layer.md).
+
+```powershell
+python -m matchmind.corpus.validate_bronze
+```
 
 | Nội dung | Kết quả đã xác minh |
 |---|---:|
@@ -64,9 +73,10 @@ Toàn bộ `203.882` StatsBomb 360 frame của 64 trận đã được kiểm tr
 
 ```mermaid
 flowchart LR
-    A[StatsBomb matches/events/lineups/360] --> B[Raw Reader]
-    B --> C[Normalizer]
-    C --> D[Validator]
+    A[Bronze: StatsBomb matches/events/lineups/360] --> B[Raw Reader]
+    B --> R[Raw StatsBomb Validator]
+    R --> C[Normalizer]
+    C --> D[Canonical Validator]
     D -->|event hợp lệ| E[(events)]
     D -->|lineup hợp lệ| H[(player_match_intervals)]
     D -->|360 hợp lệ| I[(event_360)]
@@ -86,9 +96,9 @@ Pipeline hiện có khả năng:
 - Lưu và kiểm tra `203.882` StatsBomb 360 frame; trận không có 360 vẫn sử dụng được.
 - Giữ đúng period, timestamp, phút bù giờ, hiệp phụ và luân lưu.
 - Kiểm tra ID, kiểu dữ liệu, tọa độ, quan hệ team/player và quy định null.
-- Lưu record lỗi cùng nguyên nhân vào `invalid_events`.
+- Lưu record lỗi cùng nguyên nhân vào `quarantine.invalid_events`.
 - Upsert theo `(source, source_event_id)` để chạy lại mà không tạo dữ liệu trùng.
-- Ghi lịch sử mỗi lần chạy vào `ingestion_runs` và đối soát toàn bộ record.
+- Ghi lịch sử mỗi lần chạy vào `meta.ingestion_runs` và đối soát toàn bộ record.
 
 Trạng thái dữ liệu sau khi ingest và enrichment đầy đủ:
 
@@ -109,14 +119,17 @@ Các bảng PostgreSQL chính:
 
 | Bảng | Vai trò |
 |---|---|
-| `matches` | Thông tin trận đấu và tỷ số |
-| `teams` | Danh mục đội bóng |
-| `players` | Danh mục cầu thủ |
-| `events` | Event đã được chuẩn hóa và kiểm tra |
-| `player_match_intervals` | Khoảng vị trí/thi đấu của cầu thủ theo trận |
-| `event_360` | Visible area và freeze-frame liên kết theo event UUID |
-| `invalid_events` | Record bị từ chối cùng lý do |
-| `ingestion_runs` | Phiên bản, trạng thái và số liệu mỗi lần ingest |
+| `silver.matches` | Thông tin trận đấu và tỷ số |
+| `silver.teams` | Danh mục đội bóng |
+| `silver.players` | Danh mục cầu thủ |
+| `silver.events` | Event đã được chuẩn hóa và kiểm tra |
+| `silver.player_match_intervals` | Khoảng vị trí/thi đấu của cầu thủ theo trận |
+| `silver.event_360` | Visible area và freeze-frame liên kết theo event UUID |
+| `quarantine.invalid_events` | Record bị từ chối cùng lý do |
+| `meta.ingestion_runs` | Phiên bản, trạng thái và số liệu mỗi lần ingest |
+| `meta.analytics_runs` | Phiên bản, lineage và trạng thái mỗi lần build analytics |
+| `gold.analytics_actions` | Chuỗi SPADL action đã chuẩn bị cho phân tích |
+| `gold.analytics_action_features` | Feature VAEP point-in-time theo từng action |
 
 Chi tiết mapping StatsBomb → canonical nằm trong [data dictionary](docs/data_dictionary/statsbomb.md). Schema nền tảng nằm trong [migration 001](infra/db/migrations/001_data_foundation.up.sql), còn enrichment VAEP/360 nằm trong [migration 002](infra/db/migrations/002_vaep_event_enrichment.up.sql).
 
@@ -128,13 +141,13 @@ Sau khi cài dependency, khởi động PostgreSQL và áp dụng migration, có
 toàn bộ ingestion → features → model preparation → baseline training bằng:
 
 ```powershell
-py -3.12 -m matchmind.pipelines.run_all
+python -m matchmind.pipelines.run_all
 ```
 
 ### 1. Cài dependency
 
 ```powershell
-py -3.12 -m pip install -r requirements.txt
+uv pip install --python .\.venv\Scripts\python.exe -r requirements.txt
 ```
 
 ### 2. Khởi động PostgreSQL và pgAdmin
@@ -159,48 +172,27 @@ Get-Content -Raw infra/db/migrations/002_vaep_event_enrichment.up.sql |
 
 Get-Content -Raw infra/db/migrations/003_spadl_analytics.up.sql |
   docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
+
+Get-Content -Raw infra/db/migrations/004_medallion_silver.up.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
+
+Get-Content -Raw infra/db/migrations/005_medallion_gold.up.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
 ```
 
-### 4. Kiểm tra dataset trước khi ingest
+### 4. Ingest toàn bộ corpus
 
 ```powershell
-py -3.12 scripts/tools/profile_statsbomb.py --strict
-```
-
-`baseline: PASS` nghĩa là dữ liệu hiện tại vẫn khớp với manifest đã khóa.
-
-### 5. Ingest toàn bộ 64 trận
-
-```powershell
-py -3.12 -m matchmind.ingestion.run
+python -m matchmind.ingestion.run
 ```
 
 Có thể chạy lại lệnh này an toàn. Event đã tồn tại sẽ được nhận diện là deduplicated thay vì được chèn thêm.
+Manifest, checksum và source files của corpus được kiểm tra tự động trước khi ingest.
 
-### 6. Chạy test
-
-```powershell
-py -3.12 -m unittest discover -s tests -v
-```
-
-## Khám phá event nguồn
-
-Xem từng trang 100 event của một trận:
+### 5. Chạy test
 
 ```powershell
-py -3.12 scripts/tools/view_events.py 3857276
-```
-
-Chỉ xem các cú sút:
-
-```powershell
-py -3.12 scripts/tools/view_events.py 3857276 --type Shot
-```
-
-Xem toàn bộ JSON của trang đầu:
-
-```powershell
-py -3.12 scripts/tools/view_events.py 3857276 --raw --once
+python -m unittest discover -s tests -v
 ```
 
 ## SPADL analytics
@@ -208,17 +200,17 @@ py -3.12 scripts/tools/view_events.py 3857276 --raw --once
 Tạo baseline actions/features cho toàn bộ dataset:
 
 ```powershell
-py -3.12 -m matchmind.vaep_features.run
+python -m matchmind.vaep_features.run
 ```
 
 Bật feature contract StatsBomb 360 riêng:
 
 ```powershell
-py -3.12 -m matchmind.vaep_features.run --include-360
+python -m matchmind.vaep_features.run --include-360
 ```
 
-Output được lưu trong `analytics_runs`, `analytics_actions`,
-`analytics_action_features` và `artifacts/features/plan03/`.
+Output được lưu trong `meta.analytics_runs`, `gold.analytics_actions`,
+`gold.analytics_action_features` và `artifacts/features/plan03/`.
 
 ## VAEP — bước kế tiếp
 
@@ -254,7 +246,7 @@ VAEP sau đó được cộng theo cầu thủ và chuẩn hóa trên 90 phút �
 
 ```text
 apps/                            Backend và frontend deploy độc lập
-packages/matchmind/              Python package dùng chung
+matchmind/                       Python package dùng chung
 ├── corpus/                      Corpus manifest và match metadata
 ├── ingestion/                   Normalize, validate và ghi PostgreSQL
 ├── spadl/                       Đọc canonical events và tạo SPADL actions
@@ -267,11 +259,10 @@ packages/matchmind/              Python package dùng chung
 └── shared/                      Config, contracts và logging dùng chung
 
 configs/datasets/                Manifest khóa phiên bản dataset
-data/external/                   StatsBomb Open Data, không commit vào Git
+data/bronze/                     StatsBomb JSON nguyên bản, không commit vào Git
 infra/db/migrations/             PostgreSQL schema và rollback
 infra/pgadmin/                   Cấu hình pgAdmin
 tests/                           Unit, integration và end-to-end tests
-scripts/tools/                   Công cụ kiểm tra và debug
 artifacts/                       Features, models, runs và reports sinh tự động
 docs/                            Kiến trúc, data dictionary và kế hoạch
 ```

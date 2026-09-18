@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import sys
 import tempfile
@@ -12,10 +11,10 @@ import pyarrow.parquet as pq
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from matchmind.vaep_features.feature_builder import BASE_FEATURE_VERSION  # noqa: E402
-from matchmind.vaep_features.artifact_loader import baseline_feature_allowlist  # noqa: E402
+from matchmind.vaep_features.feature_dataset_loader import baseline_feature_allowlist  # noqa: E402
 from matchmind.model_dataset.builder import feature_allowlist_manifest  # noqa: E402
 from matchmind.model_training.logistic_baseline import LogisticBaselineTrainer  # noqa: E402
 
@@ -53,15 +52,9 @@ class LogisticBaselineTrainerTests(unittest.TestCase):
                 "artifacts": {
                     "model_dataset.parquet": {
                         "path": str(dataset_path),
-                        "sha256": hashlib.sha256(dataset_path.read_bytes()).hexdigest(),
                     }
                 },
                 "models": {"status": "not_trained"},
-                "production_promotion": {
-                    "corpus_adequate": True,
-                    "allowed": False,
-                    "blockers": ["models:not_trained_or_evaluated"],
-                },
             }
             (root / "training_manifest.json").write_text(
                 json.dumps(training_manifest), encoding="utf-8"
@@ -89,7 +82,7 @@ class LogisticBaselineTrainerTests(unittest.TestCase):
             self.assertEqual(
                 updated["models"]["status"], "logistic_baselines_evaluated"
             )
-            self.assertFalse(updated["production_promotion"]["allowed"])
+            self.assertTrue(updated["ready_for_xgboost"])
 
 
 if __name__ == "__main__":

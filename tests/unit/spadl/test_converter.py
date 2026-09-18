@@ -9,7 +9,7 @@ from uuid import UUID
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from matchmind.spadl import (  # noqa: E402
     ACTION_MAPPING_VERSION,

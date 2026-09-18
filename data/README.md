@@ -1,9 +1,9 @@
 # Local data
 
-- `external/`: immutable third-party sources such as StatsBomb Open Data.
-- `raw/`: snapshots received from ingestion sources.
-- `interim/`: partially transformed working data.
-- `processed/`: validated, analysis-ready datasets.
+- `bronze/`: immutable, provider-native landing data consumed by ingestion.
+- `external/`: optional download/cache area; the pipeline never reads it directly.
+- `raw/`, `interim/`, `processed/`: legacy local folders, not pipeline contracts.
 
-Dataset contents are ignored by Git. Versioned manifests live in
-`configs/datasets/`.
+Bronze payloads are ignored by Git. Their versioned contracts live in
+`configs/datasets/`; generated Silver and Gold outputs remain in PostgreSQL and
+`artifacts/` respectively.

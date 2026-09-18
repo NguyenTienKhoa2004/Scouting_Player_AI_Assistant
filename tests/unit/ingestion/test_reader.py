@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from matchmind.ingestion import (  # noqa: E402
     RawDataFileNotFoundError,
@@ -46,6 +46,14 @@ class StatsBombRawReaderTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
+
+    def test_default_data_root_is_inside_project(self) -> None:
+        reader = StatsBombRawReader()
+
+        self.assertEqual(
+            reader.data_root,
+            PROJECT_ROOT / "data" / "bronze" / "statsbomb-open-data" / "data",
+        )
 
     def test_reads_one_match_bundle_without_mutating_payload(self) -> None:
         bundle = self.reader.read_match_bundle(1001)

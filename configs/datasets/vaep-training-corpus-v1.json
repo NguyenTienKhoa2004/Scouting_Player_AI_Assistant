@@ -1,13 +1,21 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "corpus_id": "statsbomb-open-data-male-multicompetition-v1",
   "description": "Pinned male-event corpus for production VAEP evaluation",
   "source": {
     "name": "StatsBomb Open Data",
     "repository": "https://github.com/statsbomb/open-data",
     "git_commit": "b0bc9f22dd77c206ddedc1d742893b3bbe64baec",
-    "license_file": "../../data/external/statsbomb-open-data/LICENSE.pdf",
+    "license_file": "../../data/bronze/statsbomb-open-data/LICENSE.pdf",
     "attribution_required": true
+  },
+  "bronze": {
+    "layer": "bronze",
+    "data_root": "../../data/bronze/statsbomb-open-data/data",
+    "source_format": "statsbomb-open-data-json",
+    "immutable": true,
+    "required_families": ["matches", "events", "lineups"],
+    "optional_families": ["three-sixty"]
   },
   "scope": {
     "competition_gender": "male",
@@ -36,7 +44,7 @@
       "competition_name": "Premier League",
       "season_id": 27,
       "season_name": "2015/2016",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/2/27.json",
+      "matches_path": "matches/2/27.json",
       "expected_matches": 380,
       "sha256": "200578468364bff85d5d2f2f74e7bc7fcb28548986070e96e7a6f0336fd82d75"
     },
@@ -45,7 +53,7 @@
       "competition_name": "Ligue 1",
       "season_id": 27,
       "season_name": "2015/2016",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/7/27.json",
+      "matches_path": "matches/7/27.json",
       "expected_matches": 377,
       "sha256": "dfb3f46c86b3fe6b89d77145a38379179985a89c6bef4f5f088ba8144e3943e3"
     },
@@ -54,7 +62,7 @@
       "competition_name": "La Liga",
       "season_id": 27,
       "season_name": "2015/2016",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/11/27.json",
+      "matches_path": "matches/11/27.json",
       "expected_matches": 380,
       "sha256": "da7341824396b21f0bb74128b94be02c61c58aa9e8a4eb844b695e97572dba30"
     },
@@ -63,7 +71,7 @@
       "competition_name": "Serie A",
       "season_id": 27,
       "season_name": "2015/2016",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/12/27.json",
+      "matches_path": "matches/12/27.json",
       "expected_matches": 380,
       "sha256": "ebdbd2af4f6cde3742780deeccd2ba4bfbd05d47e7ed84539a70238e393439a4"
     },
@@ -72,7 +80,7 @@
       "competition_name": "FIFA World Cup",
       "season_id": 3,
       "season_name": "2018",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/43/3.json",
+      "matches_path": "matches/43/3.json",
       "expected_matches": 64,
       "sha256": "b36b45235b06aa6c1c56ef3682a93a237b493d5c4a394a6c13c500460aa4f85f"
     },
@@ -81,7 +89,7 @@
       "competition_name": "UEFA Euro",
       "season_id": 43,
       "season_name": "2020",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/55/43.json",
+      "matches_path": "matches/55/43.json",
       "expected_matches": 51,
       "sha256": "d00b8dfafa1eff7ccded5a30602ecc9073bbc951306f7922d08a3faf753231a1"
     },
@@ -90,7 +98,7 @@
       "competition_name": "FIFA World Cup",
       "season_id": 106,
       "season_name": "2022",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/43/106.json",
+      "matches_path": "matches/43/106.json",
       "expected_matches": 64,
       "sha256": "e526f97e3f01894f851863fc9cc379e19f792825c57c0780949b3cd1415ab652"
     },
@@ -99,7 +107,7 @@
       "competition_name": "African Cup of Nations",
       "season_id": 107,
       "season_name": "2023",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/1267/107.json",
+      "matches_path": "matches/1267/107.json",
       "expected_matches": 52,
       "sha256": "8b8d9edbbb6608ab90647c3a8ae2c47811d9401f0887bd9cbb1d722c70783deb"
     },
@@ -108,7 +116,7 @@
       "competition_name": "UEFA Euro",
       "season_id": 282,
       "season_name": "2024",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/55/282.json",
+      "matches_path": "matches/55/282.json",
       "expected_matches": 51,
       "sha256": "4031e75dcce6c3d251df68d81b782cd1095ca0517498b7dc761c8da8a618d5d8"
     },
@@ -117,7 +125,7 @@
       "competition_name": "Copa America",
       "season_id": 282,
       "season_name": "2024",
-      "matches_path": "../../data/external/statsbomb-open-data/data/matches/223/282.json",
+      "matches_path": "matches/223/282.json",
       "expected_matches": 32,
       "sha256": "cb12924d07436c2f9f4126eb30a665f4b8ec979c4df16778bfe4a733ea0a1eab"
     }

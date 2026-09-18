@@ -6,15 +6,19 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import pyarrow as pa
 import pyarrow.parquet as pq
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.labeling_and_splitting.splits import SPLIT_VERSION  # noqa: E402
+from matchmind.labeling_and_splitting.splits import (  # noqa: E402
+    SPLIT_VERSION,
+    ChronologicalMatchSplitter,
+)
 from matchmind.labeling_and_splitting.targets import TARGET_POLICY_VERSION  # noqa: E402
 from matchmind.labeling_and_splitting.split_artifacts import (  # noqa: E402
     ChunkedSplitArtifactWriter,
@@ -69,10 +73,22 @@ class ChunkedSplitArtifactWriterTests(unittest.TestCase):
                 json.dumps(label_manifest), encoding="utf-8"
             )
 
-            paths = ChunkedSplitArtifactWriter().write(
-                label_directory,
-                match_metadata_path=matches_path,
-            )
+            build_manifest = ChronologicalMatchSplitter._manifest
+
+            def marked_manifest(*args, **kwargs):
+                manifest = build_manifest(*args, **kwargs)
+                manifest["created_by_splitter"] = True
+                return manifest
+
+            with patch.object(
+                ChronologicalMatchSplitter,
+                "_manifest",
+                side_effect=marked_manifest,
+            ):
+                paths = ChunkedSplitArtifactWriter().write(
+                    label_directory,
+                    match_metadata_path=matches_path,
+                )
             assignments = pq.read_table(paths.assignments).to_pylist()
             manifest = json.loads(paths.manifest.read_text(encoding="utf-8"))
 
@@ -88,6 +104,7 @@ class ChunkedSplitArtifactWriterTests(unittest.TestCase):
             )
             self.assertEqual(manifest["splits"]["test"]["concedes_positive_count"], 1)
             self.assertTrue(manifest["checks"]["match_level_isolation"])
+            self.assertTrue(manifest["created_by_splitter"])
 
     @staticmethod
     def _match(match_id: int, match_date: str) -> dict[str, object]:

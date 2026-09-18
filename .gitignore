@@ -29,6 +29,8 @@ data/raw/**
 data/interim/**
 data/processed/**
 data/external/**
+data/bronze/**
+!data/bronze/README.md
 
 # Logs and temporary files
 *.log

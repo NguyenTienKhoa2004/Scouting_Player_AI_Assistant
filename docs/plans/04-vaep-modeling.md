@@ -2,10 +2,12 @@
 
 ## Status and delivery boundary
 
-Plan 04 is planned and its Plan 03 prerequisite is complete. The current full
-World Cup 2022 baseline artifact contains 64 matches, 138,946 SPADL actions,
-and one leakage-safe feature row per action. Plan 04 starts from those immutable
-artifacts and does not rebuild StatsBomb ingestion or SPADL conversion.
+Plan 04 is in progress and its Plan 03 prerequisite is complete. The current
+production-candidate baseline artifact contains 1,831 matches, 3,683,524 SPADL
+actions, eight competitions, and ten competition-season selections spanning
+2015-2024, with one leakage-safe feature row per action. Plan 04 starts from
+those immutable multi-competition artifacts and does not rebuild StatsBomb
+ingestion or SPADL conversion.
 
 Plan 04 owns the complete reproducible path from Plan 03 features to model-ready
 datasets, trained probability models, action values, and player aggregates:
@@ -21,9 +23,10 @@ actions.parquet + action_features.parquet + Plan 03 manifest
         -> PostgreSQL serving tables and evaluation reports
 ```
 
-The 64-match dataset is sufficient to implement and validate this pipeline, but
-rankings must be labeled experimental until the training manifest is expanded
-beyond one tournament.
+The former 64-match World Cup 2022 artifact was a prototype used to implement
+and validate the pipeline. It is not an active training or evaluation input.
+All baseline and promoted model runs must use the pinned 1,831-match corpus and
+pass the versioned corpus adequacy gate.
 
 ## Objective
 
@@ -157,7 +160,10 @@ XGBoost and scikit-learn versions in the training environment and model bundle.
 - Do not use match/action/run IDs, version metadata, source event IDs, player names, final match scores, future possession outcomes, or future 360 frames as features.
 - Report the untouched test set once for each frozen model version.
 
-Because goals within ten actions are rare, expand beyond the 64-match World Cup dataset before treating rankings as production-quality. Report performance by competition and position where sample sizes permit.
+Because goals within ten actions are rare, the former 64-match World Cup
+prototype must not be used for model training, comparison, or promotion. Use
+the full pinned 1,831-match multi-competition corpus and report performance by
+competition and position where sample sizes permit.
 
 The pinned production-candidate corpus is declared in
 `configs/datasets/vaep-training-corpus-v1.json`: 1,831 male matches across eight
@@ -165,8 +171,9 @@ competitions and ten competition-season selections (2015-2024). Its versioned
 adequacy gate requires at least 1,500 materialized matches, four competitions,
 six competition-season selections, 75 matches per split, and 250 positive rows
 for each target in every split. Declaring matches is not sufficient: the gate
-is evaluated against the verified Plan 03 action artifact and remains blocked
-until the declared corpus is fully materialized.
+is evaluated against the verified Plan 03 action artifact. The current
+`d1533848205f96ea` artifact materializes all 1,831 declared matches and passes
+the corpus adequacy gate; any future partial-corpus run remains blocked.
 
 Persist match assignment separately in `split_assignments.parquet`:
 
@@ -190,6 +197,11 @@ action_features.parquet
     JOIN split_assignments.parquet USING (match_id)
         -> model_dataset.parquet
 ```
+
+The default Plan 04 preparation entrypoint processes aligned Parquet row groups
+through `ChunkedTargetLabelWriter`, `ChunkedSplitArtifactWriter`,
+`ChunkedModelDatasetWriter`, and `ChunkedPreparationFinalizer`. It must never
+load the complete 1,831-match action, label, or feature tables into memory.
 
 `model_dataset.parquet` contains:
 
@@ -287,7 +299,7 @@ Also aggregate VAEP by action family, competition, season, match, team, and posi
 
 ## PostgreSQL persistence
 
-Add `infra/db/migrations/004_vaep_modeling.up.sql` and its matching down migration. The
+Add `infra/db/migrations/006_vaep_modeling.up.sql` and its matching down migration. The
 forward migration creates four Plan 04 tables without modifying or rebuilding
 the Plan 03 analytics tables.
 
@@ -379,7 +391,7 @@ artifacts/models/plan04/<modeling-run>/
 ├── action_values.parquet
 └── player_vaep.parquet
 
-PostgreSQL migration 004:
+PostgreSQL migration 006:
 ├── vaep_model_runs
 ├── vaep_action_labels
 ├── action_values
@@ -398,30 +410,34 @@ dependency, and model versions.
 4. Generate `action_labels.parquet` with socceraction's two ten-action-window targets (`i ... i+9`) and publish `target_audit.json`.
 5. Create deterministic chronological match-level train/validation/test assignments outside `VAEP.fit()` and persist both Parquet and manifest outputs.
 6. Join eligible features, labels, and split assignments into the versioned `model_dataset.parquet`; verify identifiers and metadata cannot enter the model matrix.
-7. Expand the training manifest to an adequate multi-competition/season corpus before production model promotion.
+7. Verify that the training manifest covers the complete pinned 1,831-match multi-competition/season corpus; reject partial or prototype-corpus fallback before production model promotion.
 8. Train and evaluate both logistic-regression baselines using training data only for fitted preprocessing and class weights.
 9. Train, tune, and calibrate the score and concede XGBoost models independently using train/validation only.
 10. Freeze both promoted models, run the untouched test split once, and publish performance, calibration, latency, sanity-check, and error-analysis reports.
 11. Implement an adapter matching socceraction's perspective-safe offensive and defensive VAEP formula semantics.
 12. Calculate player minutes and aggregate total, offensive, defensive, per-action-type, and per-90 values with minimum-minutes safeguards.
-13. Add migration 004 and transactionally persist `vaep_model_runs`, `vaep_action_labels`, `action_values`, and `player_vaep`.
+13. Add migration 006 and transactionally persist `vaep_model_runs`, `vaep_action_labels`, `action_values`, and `player_vaep`.
 14. Persist all Parquet/model/report artifacts with a hash-complete `training_manifest.json` and prove that rerunning the same inputs is reproducible.
 15. Add tests for contracts, label generation, target-window boundaries, match/period endings, split isolation, feature leakage, possession flips, goals, own goals, formula parity, calibration, substitutions, database constraints, idempotency, and per-90 calculations.
 
 Suggested implementation boundaries:
 
 ```text
-packages/matchmind/src/matchmind/vaep_features/artifact_loader.py
-packages/matchmind/src/matchmind/labeling_and_splitting/targets.py
-packages/matchmind/src/matchmind/labeling_and_splitting/splits.py
-packages/matchmind/src/matchmind/model_dataset/builder.py
-packages/matchmind/src/matchmind/model_training/logistic_baseline.py
-packages/matchmind/src/matchmind/model_training/evaluation.py
-packages/matchmind/src/matchmind/model_training/valuation.py
-packages/matchmind/src/matchmind/model_training/aggregation.py
-packages/matchmind/src/matchmind/model_training/postgres_writer.py
-packages/matchmind/src/matchmind/model_training/run.py
-infra/db/migrations/004_vaep_modeling.{up,down}.sql
+matchmind/vaep_features/feature_dataset_loader.py
+matchmind/labeling_and_splitting/targets.py
+matchmind/labeling_and_splitting/splits.py
+matchmind/labeling_and_splitting/label_artifacts.py
+matchmind/labeling_and_splitting/split_artifacts.py
+matchmind/model_dataset/builder.py
+matchmind/model_dataset/artifacts.py
+matchmind/model_dataset/finalize.py
+matchmind/model_training/logistic_baseline.py
+matchmind/model_training/evaluation.py
+matchmind/model_training/valuation.py
+matchmind/model_training/aggregation.py
+matchmind/model_training/postgres_writer.py
+matchmind/model_training/run.py
+infra/db/migrations/006_vaep_modeling.{up,down}.sql
 tests/modeling/
 ```
 

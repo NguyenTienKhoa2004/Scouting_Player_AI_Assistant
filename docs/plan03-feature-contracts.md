@@ -47,8 +47,8 @@ Actions without a freeze frame remain present with explicit null values.
 
 ## Materialized outputs
 
-- PostgreSQL: `analytics_runs`, `analytics_actions`,
-  `analytics_action_features`.
+- PostgreSQL: `meta.analytics_runs`, `gold.analytics_actions`,
+  `gold.analytics_action_features`.
 - Parquet: `actions.parquet`, `action_features.parquet`.
 - Audit: `conversion_quality_report.json`, `manifest.json` with SHA-256 hashes.
 
@@ -56,6 +56,6 @@ Artifacts created by the old custom `statsbomb-spadl-v1` contract are obsolete
 and must not be mixed with this contract. Rebuild with:
 
 ```powershell
-py -3.12 -m matchmind.vaep_features.run
-py -3.12 -m matchmind.vaep_features.run --include-360
+python -m matchmind.vaep_features.run
+python -m matchmind.vaep_features.run --include-360
 ```

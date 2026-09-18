@@ -2,9 +2,9 @@
 
 ## Scope
 
-This mapping applies to the dataset pinned by [`configs/datasets/statsbomb-world-cup-2022.yaml`](../../configs/datasets/statsbomb-world-cup-2022.yaml): StatsBomb FIFA World Cup 2022, competition `43`, season `106`.
+This mapping applies to the StatsBomb inputs pinned by [`configs/datasets/vaep-training-corpus-v1.json`](../../configs/datasets/vaep-training-corpus-v1.json). The verified World Cup 2022 fixture profile is retained in [`artifacts/reports/statsbomb-world-cup-2022-profile.json`](../../artifacts/reports/statsbomb-world-cup-2022-profile.json).
 
-One StatsBomb event object becomes one canonical row in `events`. The source JSON files remain immutable.
+One StatsBomb event object becomes one canonical row in `silver.events`. The source JSON files remain immutable.
 
 ## Canonical field mapping
 
@@ -79,7 +79,7 @@ Canonical event types are stable lowercase `snake_case` values. Do not derive th
 | `Substitution` | `substitution` | 587 |
 | `Tactical Shift` | `tactical_shift` | 243 |
 
-An unknown source event type is rejected into `invalid_events` until this mapping is deliberately extended.
+An unknown source event type is rejected into `quarantine.invalid_events` until this mapping is deliberately extended.
 
 ## Endpoint mapping
 
@@ -158,17 +158,17 @@ Do not flip coordinates by home/away team or period during ingestion. The canoni
 
 ## Lineup intervals
 
-Every object in `lineup[].positions[]` becomes one `player_match_intervals` row. `from` and `to` values in `MM:SS` format are converted to elapsed seconds. A null `to`/`to_period` means the interval continued until the final whistle and is resolved against match end in Plan 04. Position ID/name, periods, start reason, end reason, and the original position object are retained. Players with an empty positions array have no playing interval and therefore zero modeled minutes. A small number of StatsBomb tactical-shift intervals have non-monotonic time/period metadata; they are preserved and reported as source-quality flags rather than deleted.
+Every object in `lineup[].positions[]` becomes one `silver.player_match_intervals` row. `from` and `to` values in `MM:SS` format are converted to elapsed seconds. A null `to`/`to_period` means the interval continued until the final whistle and is resolved against match end in Plan 04. Position ID/name, periods, start reason, end reason, and the original position object are retained. Players with an empty positions array have no playing interval and therefore zero modeled minutes. A small number of StatsBomb tactical-shift intervals have non-monotonic time/period metadata; they are preserved and reported as source-quality flags rather than deleted.
 
 ## StatsBomb 360 mapping
 
-The optional `three-sixty/{match_id}.json` file is ingested in addition to, never instead of, the event file. Each record joins to `events` through:
+The optional `three-sixty/{match_id}.json` file is ingested in addition to, never instead of, the event file. Each record joins to `silver.events` through:
 
 ```text
 three_sixty.event_uuid = events.source_event_id
 ```
 
-| `event_360` column | StatsBomb source | Rule |
+| `silver.event_360` column | StatsBomb source | Rule |
 |---|---|---|
 | `source_event_id` | `frame.event_uuid` | Must link to a valid event in the same match. |
 | `visible_area` | `frame.visible_area` | Preserve the polygon in source `120 x 80` coordinates. |

@@ -7,10 +7,10 @@ flowchart TB
     %% OFFLINE / BATCH DATA PIPELINE
     %% =====================================================
     subgraph OFFLINE["Offline / Batch Pipeline"]
-        A["StatsBomb Event + Lineup<br/>+ Optional 360 Data"]
+        A["Bronze: StatsBomb Event + Lineup<br/>+ Optional 360 Data"]
         B["Data Ingestion Job"]
-        C["Validate, Normalize<br/>& Deduplicate"]
-        BAD[("invalid_events<br/>+ ingestion_runs")]
+        C["Validate Raw, Normalize,<br/>Validate Canonical & Deduplicate"]
+        BAD[("quarantine.invalid_events<br/>+ meta.ingestion_runs")]
 
         A ==>|"batch ingest"| B
         B ==>|"raw records"| C
@@ -21,9 +21,9 @@ flowchart TB
     %% DATA AND FEATURE STORAGE
     %% =====================================================
     subgraph DATA["Data & Feature Storage"]
-        D[("PostgreSQL<br/>Events + Lineup Intervals + 360")]
-        ACT[("SPADL-style Actions<br/>match x action")]
-        FS[("Point-in-time Action Features<br/>current + previous 2 actions")]
+        D[("PostgreSQL Silver<br/>Events + Lineup Intervals + 360")]
+        ACT[("PostgreSQL Gold<br/>SPADL-style Actions<br/>match x action")]
+        FS[("PostgreSQL Gold<br/>Point-in-time Action Features<br/>current + previous 2 actions")]
         TD[("Training Dataset<br/>Features + Two Future Targets")]
         VALUES[("Action Values + Player VAEP<br/>Total / Offensive / Defensive / 90")]
     end

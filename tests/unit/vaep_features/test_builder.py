@@ -11,7 +11,7 @@ from uuid import UUID
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from matchmind.vaep_features import (  # noqa: E402
     BASE_FEATURE_VERSION,
@@ -20,18 +20,16 @@ from matchmind.vaep_features import (  # noqa: E402
     STATE_CONTRACT_VERSION,
 )
 from matchmind.spadl import SpadlInput, SpadlInputValidationReport  # noqa: E402
-from matchmind.ingestion.normalizer import Canonical360Frame, CanonicalEvent  # noqa: E402
-from matchmind.vaep_features.artifact_loader import FeatureArtifactLoader  # noqa: E402
-from matchmind.vaep_features.artifacts import (  # noqa: E402
-    ChunkedParquetArtifactWriter,
-    ParquetArtifactWriter,
-)
+from matchmind.ingestion.normalizer import CanonicalEvent  # noqa: E402
+from matchmind.ingestion.three_sixty_normalizer import Canonical360Frame  # noqa: E402
+from matchmind.vaep_features.feature_dataset_loader import ValidatedFeatureDatasetLoader  # noqa: E402
+from matchmind.vaep_features.artifacts import ParquetArtifactWriter  # noqa: E402
 from matchmind.vaep_features.postgres_writer import (  # noqa: E402
     PostgresAnalyticsWriter,
 )
 
 
-class FeatureArtifactHandCalculatedFixtureTests(unittest.TestCase):
+class FeatureDatasetHandCalculatedFixtureTests(unittest.TestCase):
     def setUp(self) -> None:
         self.pass_event = self._event(
             event_id="10000000-0000-0000-0000-000000000001",
@@ -284,14 +282,14 @@ class FeatureArtifactHandCalculatedFixtureTests(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as directory:
-            paths = ChunkedParquetArtifactWriter().write(
+            paths = ParquetArtifactWriter().write_many(
                 [first, second], Path(directory)
             )
             manifest = json.loads(paths.manifest.read_text(encoding="utf-8"))
             quality = json.loads(
                 paths.quality_report.read_text(encoding="utf-8")
             )
-            loaded = FeatureArtifactLoader().load(paths.directory)
+            loaded = ValidatedFeatureDatasetLoader().load(paths.directory)
 
             self.assertEqual(quality["match_count"], 2)
             self.assertEqual(loaded.actions.num_rows, 4)
@@ -454,7 +452,7 @@ class FakeAnalyticsConnection:
             return FakeDatabaseResult(
                 [(table,) for table in PostgresAnalyticsWriter.REQUIRED_TABLES]
             )
-        if "INSERT INTO analytics_runs" in sql:
+        if "INSERT INTO meta.analytics_runs" in sql:
             return FakeDatabaseResult([(7,)])
         return FakeDatabaseResult([])
 

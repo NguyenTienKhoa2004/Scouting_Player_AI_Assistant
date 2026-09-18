@@ -15,7 +15,7 @@ Plan 02 owns faithful source ingestion. It does not create model actions or VAEP
 
 ## Dataset strategy
 
-Use the complete StatsBomb FIFA World Cup 2022 selection pinned in [`configs/datasets/statsbomb-world-cup-2022.yaml`](../../configs/datasets/statsbomb-world-cup-2022.yaml) as the first enrichment and conversion fixture:
+Use the complete StatsBomb FIFA World Cup 2022 selection as the first enrichment and conversion fixture. It is now pinned as competition `43`, season `106` inside the authoritative [`configs/datasets/vaep-training-corpus-v1.json`](../../configs/datasets/vaep-training-corpus-v1.json):
 
 ```text
 64 matches
@@ -24,9 +24,9 @@ lineup JSON
 64 available StatsBomb 360 files
 ```
 
-Update the manifest so 360 is an optional included input with file counts and validation rules. Event-only ingestion must continue to work for competitions without 360.
+StatsBomb 360 is an optional input with validation rules. Event-only ingestion must continue to work for competitions without 360.
 
-After the enriched contract passes on World Cup 2022, add separately versioned competition-season manifests for the larger training corpus required by Plan 04. Never mix unpinned source revisions in one dataset version.
+After the enriched contract passed on World Cup 2022, the larger Plan 04 corpus was consolidated into one versioned manifest containing ten competition-season selections. Never mix unpinned source revisions in one dataset version.
 
 ## Enriched event contract
 
@@ -161,7 +161,8 @@ immutable StatsBomb JSON
         ↓
 enriched normalization and validation
         ↓
-events + player_match_intervals + event_360 + invalid_events
+silver.events + silver.player_match_intervals + silver.event_360
+        + quarantine.invalid_events + meta.ingestion_runs
         ↓
 Plan 03 SPADL-style action conversion
 ```

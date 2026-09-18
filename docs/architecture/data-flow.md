@@ -3,7 +3,7 @@
 Code được tổ chức theo đúng thứ tự các stage của pipeline:
 
 ```text
-StatsBomb Open Data
+Bronze: immutable StatsBomb Open Data JSON
         │
         ▼
 matchmind/corpus/
@@ -12,13 +12,14 @@ matchmind/corpus/
         ▼
 matchmind/ingestion/
         ├── reader.py
+        ├── raw_validation/
         ├── normalizer.py
         ├── validator.py
         ├── service.py
         └── postgres_writer.py
         │
         ▼
-PostgreSQL: events + lineup + event_360
+PostgreSQL Silver: events + lineup + event_360
         │
         ▼
 matchmind/spadl/
@@ -35,18 +36,21 @@ matchmind/vaep_features/
         └── artifacts.py
         │
         ▼
+PostgreSQL Gold: SPADL actions + point-in-time action features
+        │
+        ▼
 Parquet: actions.parquet + action_features.parquet
         │
         ▼
 matchmind/labeling_and_splitting/
-        ├── targets.py
-        └── splits.py
+        ├── targets.py + label_artifacts.py
+        └── splits.py + split_artifacts.py
         │
         ▼
 matchmind/model_dataset/
         ├── builder.py
-        ├── preparation.py
-        └── artifacts.py
+        ├── artifacts.py
+        └── finalize.py
         │
         ▼
 model_dataset.parquet
@@ -65,5 +69,4 @@ matchmind.model_training.run
 ```
 
 Mỗi feature row dùng đúng ba action: action hiện tại `a0` và hai action trước đó
-`a1`, `a2`. Thư mục `scripts/tools/` chỉ chứa công cụ kiểm tra và debug, không
-phải entrypoint của pipeline chính.
+`a1`, `a2`.

@@ -1,4 +1,4 @@
--e ./packages/matchmind
+-e .
 psycopg[binary]==3.3.4
 pyarrow==25.0.1
 socceraction==1.5.3

@@ -9,7 +9,7 @@ from uuid import UUID
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(PROJECT_ROOT / "packages" / "matchmind" / "src"))
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from matchmind.spadl import (  # noqa: E402
     SpadlInputContractError,
@@ -19,10 +19,12 @@ from matchmind.spadl.input_reader import (  # noqa: E402
     PostgresSpadlInputReader,
     SPADL_INPUT_SCHEMA,
 )
-from matchmind.ingestion.normalizer import (  # noqa: E402
-    Canonical360Frame,
-    CanonicalEvent,
+from matchmind.ingestion.normalizer import CanonicalEvent  # noqa: E402
+from matchmind.ingestion.lineup_normalizer import (  # noqa: E402
     CanonicalLineupInterval,
+)
+from matchmind.ingestion.three_sixty_normalizer import (  # noqa: E402
+    Canonical360Frame,
 )
 
 
@@ -361,7 +363,7 @@ class FakeConnection:
                     if (table, column) != self.omitted_schema_column
                 ]
             )
-        if " FROM events" in sql:
+        if " FROM silver.events" in sql:
             return FakeResult(
                 [
                     tuple(
@@ -370,9 +372,9 @@ class FakeConnection:
                     )
                 ]
             )
-        if " FROM matches" in sql:
+        if " FROM silver.matches" in sql:
             return FakeResult([(self.event.match_id, self.event.team_id, 1833)])
-        if " FROM player_match_intervals" in sql:
+        if " FROM silver.player_match_intervals" in sql:
             return FakeResult(
                 [
                     tuple(
@@ -382,7 +384,7 @@ class FakeConnection:
                     for interval in self.intervals
                 ]
             )
-        if " FROM event_360" in sql:
+        if " FROM silver.event_360" in sql:
             return FakeResult(
                 [
                     tuple(
