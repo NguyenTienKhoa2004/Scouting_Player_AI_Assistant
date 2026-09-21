@@ -37,6 +37,11 @@ data/bronze/**
 tmp/
 temp/
 
+# Local planning and operational notes
+docs/RUNBOOK.md
+docs/bronze-update.md
+docs/plans/
+
 # Editors and operating systems
 .vscode/
 .idea/
