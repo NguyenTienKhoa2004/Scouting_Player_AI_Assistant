@@ -1,274 +1,314 @@
-# MatchMind AI
+# PitchPulse
 
-> Biến StatsBomb event và 360 data thành SPADL actions, định giá từng hành động bằng VAEP và giúp scout tìm ra những đóng góp mà thống kê truyền thống bỏ sót.
+> Turning every football action into measurable value.
 
-MatchMind AI là một dự án player scouting analytics sử dụng dữ liệu sự kiện để trả lời những câu hỏi như:
+PitchPulse is an end-to-end football analytics and machine-learning system that measures how every on-ball action changes a team's probability of scoring or conceding. It is designed for player scouting and performance analysis: passes, carries, shots, recoveries, duels, and other actions are valued in context, then aggregated into offensive, defensive, total, and per-90 player metrics.
 
-- Cầu thủ nào tạo ra nhiều giá trị nhất trên mỗi 90 phút?
-- Giá trị đó đến từ tấn công, phòng ngự hay một loại hành động cụ thể?
-- Cầu thủ tạo hoặc làm mất giá trị ở khu vực nào trên sân?
-- Hai cầu thủ cùng vị trí khác nhau như thế nào khi đặt trong cùng một bộ lọc?
+The repository contains the complete batch analytics core: versioned data ingestion, validation, feature engineering, model training, frozen-test evaluation, action valuation, player aggregation, PostgreSQL persistence, and reproducibility checks.
 
-Dự án không bắt đầu từ chatbot. Nền tảng của MatchMind là dữ liệu có thể kiểm chứng, chuỗi hành động SPADL do `socceraction` tạo và kết quả VAEP tái lập được. Lớp AI về sau chỉ giải thích những kết quả đã được hệ thống tính toán.
+## What the project delivers
 
-## Trạng thái hiện tại
+- A pinned, checksum-validated StatsBomb Open Data corpus.
+- An idempotent Bronze-to-Silver ingestion pipeline for matches, events, lineups, and optional StatsBomb 360 frames.
+- Deterministic conversion from canonical events to SPADL actions.
+- Leakage-safe action-state features using only the current and two previous actions.
+- Independent `P_score` and `P_concede` models with logistic baselines, XGBoost training, probability calibration, and a frozen test set.
+- VAEP values for every eligible action.
+- Player aggregates by match and competition-season, including total, offensive, defensive, and per-90 VAEP.
+- Versioned Parquet artifacts and PostgreSQL Gold tables with lineage, hashes, run metadata, and quality reports.
+- A reproducibility workflow that rebuilds and compares model artifacts.
 
-| Plan | Mục tiêu | Trạng thái |
-|---|---|---|
-| [01 — Product Scope](docs/plans/01-product-scope.md) | Xác định người dùng, giá trị và phạm vi MVP | Hoàn thành |
-| [02 — Data Foundation](docs/plans/02-data-foundation.md) | Enriched StatsBomb events, lineup intervals và 360 trong PostgreSQL | Hoàn thành |
-| [03 — SPADL Actions & State Features](docs/plans/03-analytics-features.md) | Chuyển event thành action và feature theo từng trạng thái | Hoàn thành |
-| [04 — VAEP Modeling](docs/plans/04-vaep-modeling.md) | Train `P_score`/`P_concede`, định giá action và tính VAEP/90 | Đã lên kế hoạch |
-
-## Sản phẩm hướng tới
-
-MatchMind hướng tới scout và recruitment analyst cần đánh giá cầu thủ qua nhiều trận. Analyst và người hâm mộ nâng cao là nhóm người dùng phụ.
-
-Thay vì chỉ nhìn vào bàn thắng, kiến tạo hoặc số lần chuyền thành công, MatchMind xem xét tác động của từng hành động như chuyền bóng, kéo bóng, tranh chấp, thu hồi và dứt điểm. Hệ thống đánh giá hành động đó giúp đội tiến gần hơn đến bàn thắng hay giảm nguy cơ thủng lưới, rồi tổng hợp thành điểm đóng góp của mỗi cầu thủ.
-
-Nhờ đó, người dùng có thể tìm ra những cầu thủ đóng góp thầm lặng, hiểu điểm mạnh và điểm yếu của họ, so sánh các ứng viên cùng vị trí và kiểm tra lại những tình huống đã tạo nên kết quả. MatchMind hỗ trợ quá trình tuyển trạch, không thay thế đánh giá chuyên môn hoặc quyết định chuyển nhượng của con người.
-
-MVP hiện chưa xử lý video, dữ liệu vị trí liên tục hoặc dữ liệu trực tiếp; sản phẩm cũng không dự báo cá cược hay tự động đưa ra quyết định chuyển nhượng.
-
-## Tính năng của dự án
-
-| Tính năng | Giá trị cho người dùng | Trạng thái |
-|---|---|---|
-| Chuẩn bị dữ liệu trận đấu | Tổng hợp và kiểm tra dữ liệu sự kiện, đội hình và thông tin không gian từ StatsBomb | Hoàn thành nền tảng |
-| Định giá từng hành động | Cho biết một pha bóng tạo thêm hay làm mất giá trị cho đội | Bước phát triển tiếp theo |
-| Bảng xếp hạng cầu thủ | Xếp hạng theo tổng đóng góp và mức đóng góp trên mỗi 90 phút | Đã lên kế hoạch |
-| Phân tích tấn công và phòng ngự | Giúp nhận biết giá trị của cầu thủ đến từ mặt trận nào | Đã lên kế hoạch |
-| So sánh cầu thủ | So sánh hai cầu thủ cùng vị trí trên một biểu đồ thống nhất | Đã lên kế hoạch |
-| Bản đồ tạo giá trị | Hiển thị những khu vực cầu thủ thường tạo ra hoặc làm mất giá trị | Đã lên kế hoạch |
-| Tìm kiếm và bộ lọc | Lọc theo giải đấu, vị trí, đội bóng, độ tuổi và số phút thi đấu | Đã lên kế hoạch |
-| Kiểm chứng tình huống | Xem lại các hành động đóng góp tích cực hoặc tiêu cực nhất của cầu thủ | Đã lên kế hoạch |
-
-Dataset hiện tại chỉ có World Cup 2022 nên bộ lọc giải đấu mới có một lựa chọn. Nguồn StatsBomb đang sử dụng không có ngày sinh; bộ lọc tuổi cần thêm một nguồn thông tin cầu thủ có giấy phép và được quản lý phiên bản riêng.
-
-## Dataset
-
-MatchMind sử dụng [StatsBomb Open Data](https://github.com/statsbomb/open-data) được khóa bằng [vaep-training-corpus-v1.json](configs/datasets/vaep-training-corpus-v1.json). Đây là manifest nguồn duy nhất cho pipeline, gồm 1.831 trận nam thuộc tám giải và mười cặp giải-mùa trong giai đoạn 2015–2024; World Cup 2022 là một selection gồm 64 trận trong corpus này.
-
-Dữ liệu nguồn nằm trong Bronze layer tại `data/bronze/statsbomb-open-data/` và
-được giữ nguyên theo định dạng của nhà cung cấp. Trước ingestion, pipeline kiểm
-tra commit Git, working tree, cấu trúc thư mục, manifest, checksum và các quan hệ
-raw. Xem [Bronze contract](docs/architecture/bronze-layer.md).
-
-```powershell
-python -m matchmind.corpus.validate_bronze
-```
-
-| Nội dung | Kết quả đã xác minh |
-|---|---:|
-| Trận đấu | 64 |
-| Sự kiện | 234.637 |
-| Loại sự kiện | 33 |
-| Cú sút | 1.494 |
-| Cú sút có xG | 1.494 |
-| Source event ID trùng | 0 |
-
-Toàn bộ `203.882` StatsBomb 360 frame của 64 trận đã được kiểm tra, liên kết với event bằng UUID và ingest vào PostgreSQL. Event-only vẫn là contract bắt buộc; 360 là enrichment tùy chọn cho feature nâng cao và không phải dữ liệu tracking liên tục. Việc sử dụng dữ liệu tuân theo giấy phép và yêu cầu attribution của StatsBomb.
-
-## Data foundation đã xây dựng
+## System architecture
 
 ```mermaid
 flowchart LR
-    A[Bronze: StatsBomb matches/events/lineups/360] --> B[Raw Reader]
-    B --> R[Raw StatsBomb Validator]
-    R --> C[Normalizer]
-    C --> D[Canonical Validator]
-    D -->|event hợp lệ| E[(events)]
-    D -->|lineup hợp lệ| H[(player_match_intervals)]
-    D -->|360 hợp lệ| I[(event_360)]
-    D -->|không hợp lệ| F[(invalid_events)]
-    E --> G[Reconciliation]
-    H --> G
-    I --> G
+    A["Bronze<br/>StatsBomb JSON"] --> B["Validate, normalize,<br/>and reconcile"]
+    B -->|accepted| C[("PostgreSQL Silver<br/>events, lineups, 360")]
+    B -->|rejected| Q[("Quarantine")]
+    C --> D["SPADL conversion"]
+    D --> E["Point-in-time<br/>state features"]
+    E --> F["Labels and chronological<br/>match-level splits"]
+    F --> G["Logistic baselines +<br/>calibrated XGBoost"]
+    G --> H["Frozen test evaluation"]
+    H --> I["Action VAEP"]
+    I --> J["Player VAEP<br/>and VAEP/90"]
+    E --> K[("PostgreSQL Gold<br/>SPADL + features")]
+    F --> L[("Parquet model dataset")]
+    J --> M[("PostgreSQL Gold<br/>labels, values, aggregates")]
 ```
 
-Pipeline hiện có khả năng:
+The processing path is deliberately separated from the application layer. `pitchpulse/` owns reusable analytics and ML logic; `apps/backend/` and `apps/frontend/` are reserved boundaries for a future API and dashboard and are not required to run the pipeline.
 
-- Đọc dữ liệu match, lineup và event từ nguồn JSON bất biến.
-- Mapping 33 loại event sang một canonical contract thống nhất.
-- Giữ source event order, possession, subtype, body part, play pattern, pressure flags, related events và raw details.
-- Chuẩn hóa tọa độ StatsBomb từ sân `120 × 80` về thang `0–100`.
-- Lưu `2.958` player-match position intervals để tính phút thi đấu.
-- Lưu và kiểm tra `203.882` StatsBomb 360 frame; trận không có 360 vẫn sử dụng được.
-- Giữ đúng period, timestamp, phút bù giờ, hiệp phụ và luân lưu.
-- Kiểm tra ID, kiểu dữ liệu, tọa độ, quan hệ team/player và quy định null.
-- Lưu record lỗi cùng nguyên nhân vào `quarantine.invalid_events`.
-- Upsert theo `(source, source_event_id)` để chạy lại mà không tạo dữ liệu trùng.
-- Ghi lịch sử mỗi lần chạy vào `meta.ingestion_runs` và đối soát toàn bộ record.
+## Data engineering
 
-Trạng thái dữ liệu sau khi ingest và enrichment đầy đủ:
+### Source corpus
+
+The default corpus is declared in [`configs/datasets/vaep-training-corpus-v1.json`](configs/datasets/vaep-training-corpus-v1.json) and pins StatsBomb Open Data to commit `b0bc9f22dd77c206ddedc1d742893b3bbe64baec`.
+
+| Coverage | Value |
+|---|---:|
+| Matches | 1,831 |
+| Competitions | 8 |
+| Competition-seasons | 10 |
+| Date range | 2015-08-07 to 2024-07-15 |
+| Gender scope | Men's competitions |
+| Required inputs | Matches, events, lineups |
+| Optional enrichment | StatsBomb 360 |
+
+The corpus includes Premier League, Ligue 1, La Liga, Serie A, FIFA World Cup, UEFA Euro, African Cup of Nations, and Copa America selections. Provider data stays immutable under `data/bronze/` and is excluded from Git.
+
+### Medallion pipeline
+
+**Bronze** is the provider-native boundary. The loader verifies the pinned Git revision, manifest schema, paths, file hashes, declared match counts, required input families, and cross-record relationships before database access.
+
+**Silver** is the validated PostgreSQL representation. The ingestion service:
+
+- normalizes StatsBomb coordinates and event fields into typed canonical records;
+- preserves source IDs, order, timestamps, periods, possession, play pattern, subtype, body part, related events, and raw details;
+- derives player participation and position intervals from lineups;
+- links optional 360 freeze frames and visible areas by event UUID;
+- quarantines invalid records with their rejection reason;
+- performs idempotent upserts and reconciles every ingestion run.
+
+**Gold** contains versioned analytics and ML outputs: SPADL actions, point-in-time feature rows, target labels, calibrated action values, and player VAEP aggregates.
+
+### PostgreSQL schemas
+
+| Schema | Main objects | Purpose |
+|---|---|---|
+| `meta` | `ingestion_runs`, `analytics_runs`, `vaep_model_runs` | Execution status, lineage, versions, counts, metrics, and artifact hashes |
+| `quarantine` | `invalid_events` | Rejected source records and validation reasons |
+| `silver` | `matches`, `teams`, `players`, `events`, `player_match_intervals`, `event_360` | Canonical football data |
+| `gold` | `spadl_actions`, `spadl_action_features`, `vaep_action_labels`, `action_values`, `player_vaep` | Analytics-ready and model-derived data |
+
+Database migrations are reversible and live in [`infra/db/migrations/`](infra/db/migrations/). See the [data dictionary](docs/data_dictionary/statsbomb.md) for the source-to-canonical mapping.
+
+## Machine learning
+
+### Feature engineering
+
+StatsBomb events are converted to `socceraction==1.5.3` SPADL actions on a `105 x 68` pitch. Each model row represents one action state and contains features for exactly three actions:
 
 ```text
-raw events      = 234637
-rejected        = 0
-events in DB    = 234637
-lineup intervals= 2958
-360 frames      = 203882
-reconciled      = True
+a0 = current action
+a1 = previous action
+a2 = action before a1
 ```
 
-`accepted` và `deduplicated` là số liệu theo từng lần chạy nên thay đổi khi pipeline được chạy lại. Các số phía trên là trạng thái cuối trong database; khóa nguồn và cơ chế upsert bảo đảm không tạo event trùng.
+The baseline feature contract contains 568 allowlisted features. It uses only information available at the current action, preventing future-action leakage. StatsBomb 360 features are available through a separate optional contract; matches or actions without 360 data remain valid for the event-data baseline.
 
-## Canonical database
+### Targets and splits
 
-Các bảng PostgreSQL chính:
+For state `i`, the two binary targets are:
 
-| Bảng | Vai trò |
-|---|---|
-| `silver.matches` | Thông tin trận đấu và tỷ số |
-| `silver.teams` | Danh mục đội bóng |
-| `silver.players` | Danh mục cầu thủ |
-| `silver.events` | Event đã được chuẩn hóa và kiểm tra |
-| `silver.player_match_intervals` | Khoảng vị trí/thi đấu của cầu thủ theo trận |
-| `silver.event_360` | Visible area và freeze-frame liên kết theo event UUID |
-| `quarantine.invalid_events` | Record bị từ chối cùng lý do |
-| `meta.ingestion_runs` | Phiên bản, trạng thái và số liệu mỗi lần ingest |
-| `meta.analytics_runs` | Phiên bản, lineage và trạng thái mỗi lần build analytics |
-| `gold.analytics_actions` | Chuỗi SPADL action đã chuẩn bị cho phân tích |
-| `gold.analytics_action_features` | Feature VAEP point-in-time theo từng action |
+```text
+scores_i   = the acting team scores within the next 10 actions
+concedes_i = the acting team concedes within the next 10 actions
+```
 
-Chi tiết mapping StatsBomb → canonical nằm trong [data dictionary](docs/data_dictionary/statsbomb.md). Schema nền tảng nằm trong [migration 001](infra/db/migrations/001_data_foundation.up.sql), còn enrichment VAEP/360 nằm trong [migration 002](infra/db/migrations/002_vaep_event_enrichment.up.sql).
+Complete matches are ordered chronologically and assigned once to a `70% / 15% / 15%` train, validation, and test split. The split has no random seed and never separates actions from the same match. The test set remains untouched until the selected and calibrated models are frozen.
 
-## Chạy project
+### Training and evaluation
 
-Yêu cầu: Python 3.12 và Docker Desktop.
+The pipeline trains class-weighted logistic SGD baselines, evaluates several XGBoost candidates, fits sigmoid probability calibrators on a dedicated validation phase, and compares the selected models with the baselines. The frozen bundle is then evaluated once on the held-out test set using PR AUC, ROC AUC, Brier score, log loss, precision, recall, calibration curves, latency, group diagnostics, and football sanity checks.
 
-Sau khi cài dependency, khởi động PostgreSQL và áp dụng migration, có thể chạy
-toàn bộ ingestion → features → model preparation → baseline training bằng:
+The committed evaluation policy is defined in [`configs/models/vaep-test-evaluation-v1.json`](configs/models/vaep-test-evaluation-v1.json).
+
+### VAEP valuation
+
+The calibrated models estimate scoring and conceding probabilities before and after each action:
+
+```text
+offensive_value(a_i) = P_score(after_i) - P_score(before_i)
+defensive_value(a_i) = P_concede(before_i) - P_concede(after_i)
+
+VAEP(a_i) = offensive_value(a_i) + defensive_value(a_i)
+```
+
+Action values are reconciled and then aggregated by player, team, position, action type, match, and competition-season. Player rankings default to a minimum of 450 minutes and expose:
+
+- total VAEP;
+- offensive VAEP;
+- defensive VAEP;
+- action count and match count;
+- minutes played;
+- VAEP per 90 minutes.
+
+## Verified pipeline output
+
+The checked-in run manifests record the following completed output for the full corpus:
+
+| Artifact | Verified result |
+|---|---:|
+| SPADL actions / labels | 3,683,524 |
+| Eligible model rows | 3,683,283 |
+| Model features | 568 |
+| Train matches | 1,281 |
+| Validation matches | 275 |
+| Test matches | 275 |
+| Action VAEP rows | 3,683,283 |
+| Players | 4,050 |
+| Player aggregate rows | 559,408 |
+| PostgreSQL modeling run | Persisted and reconciled |
+
+Frozen-test metrics for the calibrated XGBoost bundle:
+
+| Target | PR AUC | ROC AUC | Brier score |
+|---|---:|---:|---:|
+| Scores | 0.2063 | 0.8165 | 0.00825 |
+| Concedes | 0.0656 | 0.8205 | 0.00180 |
+
+Both targets passed the configured quality gate and beat their logistic baselines during validation. Full metrics, calibration diagnostics, error analysis, and sanity checks are stored with the model artifacts under `artifacts/models/`.
+
+## Quick start
+
+### Requirements
+
+- Python 3.12+
+- Docker Desktop with Docker Compose
+- Git
+
+### 1. Create the environment
 
 ```powershell
-python -m matchmind.pipelines.run_all
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-### 1. Cài dependency
+### 2. Materialize the pinned Bronze data
 
 ```powershell
-uv pip install --python .\.venv\Scripts\python.exe -r requirements.txt
+git clone https://github.com/statsbomb/open-data.git data/bronze/statsbomb-open-data
+git -C data/bronze/statsbomb-open-data checkout b0bc9f22dd77c206ddedc1d742893b3bbe64baec
+python -m pitchpulse.corpus.validate_bronze
 ```
 
-### 2. Khởi động PostgreSQL và pgAdmin
+StatsBomb Open Data is subject to its own license and attribution requirements. Keep its `LICENSE.pdf` with the local Bronze copy.
+
+### 3. Start PostgreSQL and apply migrations
 
 ```powershell
 docker compose up -d
 docker compose ps
+
+Get-ChildItem infra/db/migrations/*.up.sql |
+  Sort-Object Name |
+  ForEach-Object {
+    Get-Content -Raw $_.FullName |
+      docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U pitchpulse -d pitchpulse
+    if ($LASTEXITCODE -ne 0) { throw "Migration failed: $($_.Name)" }
+  }
 ```
+
+Default local services:
 
 - PostgreSQL: `localhost:5433`
 - pgAdmin: [http://localhost:5050](http://localhost:5050)
-- Có thể thay đổi cấu hình bằng các biến trong [.env.example](.env.example).
+- Database URL: `postgresql://pitchpulse:1234567@localhost:5433/pitchpulse`
 
-### 3. Tạo schema ở lần chạy đầu tiên
+Change local credentials and ports in `.env` before using the stack outside a disposable development environment.
 
-```powershell
-Get-Content -Raw infra/db/migrations/001_data_foundation.up.sql |
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
-
-Get-Content -Raw infra/db/migrations/002_vaep_event_enrichment.up.sql |
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
-
-Get-Content -Raw infra/db/migrations/003_spadl_analytics.up.sql |
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
-
-Get-Content -Raw infra/db/migrations/004_medallion_silver.up.sql |
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
-
-Get-Content -Raw infra/db/migrations/005_medallion_gold.up.sql |
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U matchmind -d matchmind
-```
-
-### 4. Ingest toàn bộ corpus
+### 4. Run the complete pipeline
 
 ```powershell
-python -m matchmind.ingestion.run
+python -m pitchpulse.pipelines.run_all
 ```
 
-Có thể chạy lại lệnh này an toàn. Event đã tồn tại sẽ được nhận diện là deduplicated thay vì được chèn thêm.
-Manifest, checksum và source files của corpus được kiểm tra tự động trước khi ingest.
+This command executes ingestion, SPADL and feature generation, feature registration, label and dataset creation, model training, frozen-test evaluation, action valuation, player aggregation, and PostgreSQL persistence in dependency order.
 
-### 5. Chạy test
+The full corpus produces large Parquet artifacts and millions of database rows. Feature construction defaults to five matches per batch so it can run on a machine with approximately 8 GB of memory.
+
+## Run individual stages
+
+```powershell
+# Bronze -> PostgreSQL Silver
+python -m pitchpulse.ingestion.run
+
+# Silver -> SPADL actions and point-in-time features
+python -m pitchpulse.vaep_features.run
+python -m pitchpulse.vaep_features.register_corpus
+
+# Labels, chronological splits, and model dataset
+python -m pitchpulse.model_dataset.run
+
+# Logistic baselines, XGBoost selection, and calibration
+python -m pitchpulse.model_training.run
+
+# One-time evaluation of the frozen model bundle
+python -m pitchpulse.model_training.run_test_evaluation
+
+# Calibrated inference and action-level VAEP
+python -m pitchpulse.model_training.run_valuation
+
+# Player-level aggregation; change the ranking threshold if needed
+python -m pitchpulse.player_vaep.run --minimum-minutes 450
+
+# Persist completed labels, action values, and player aggregates
+python -m pitchpulse.model_training.run_persistence
+```
+
+To enable the separate StatsBomb 360 feature contract:
+
+```powershell
+python -m pitchpulse.vaep_features.run --include-360
+```
+
+To independently rebuild the modeling stages and compare artifact hashes:
+
+```powershell
+python -m pitchpulse.reproducibility.run
+```
+
+## Testing
 
 ```powershell
 python -m unittest discover -s tests -v
 ```
 
-## SPADL analytics
+The suite covers raw and canonical validation, idempotent ingestion, SPADL conversion, feature contracts, target generation, chronological splits, model datasets, training and evaluation components, VAEP calculations, player aggregation, PostgreSQL integration, pipeline orchestration, and reproducibility verification.
 
-Tạo baseline actions/features cho toàn bộ dataset:
-
-```powershell
-python -m matchmind.vaep_features.run
-```
-
-Bật feature contract StatsBomb 360 riêng:
-
-```powershell
-python -m matchmind.vaep_features.run --include-360
-```
-
-Output được lưu trong `meta.analytics_runs`, `gold.analytics_actions`,
-`gold.analytics_action_features` và `artifacts/features/plan03/`.
-
-## VAEP — bước kế tiếp
-
-Plan 03 dùng `socceraction==1.5.3` chuyển enriched event thành chuỗi SPADL chuẩn,
-với mỗi dòng đại diện cho:
+## Repository structure
 
 ```text
-match × action
+apps/                         API and dashboard application boundaries
+configs/datasets/             Versioned corpus manifests
+configs/models/               Model evaluation policies
+data/bronze/                  Immutable provider data; ignored by Git
+docs/architecture/            Data-layer and system architecture
+docs/data_dictionary/         StatsBomb-to-canonical field definitions
+infra/db/migrations/          PostgreSQL migrations and rollbacks
+infra/pgadmin/                Local pgAdmin configuration
+pitchpulse/corpus/             Corpus loading and source validation
+pitchpulse/ingestion/          Raw validation, normalization, and Silver writes
+pitchpulse/spadl/              Canonical event-to-action conversion
+pitchpulse/vaep_features/      Action states, features, artifacts, and registration
+pitchpulse/labeling_and_splitting/  Future targets and chronological splits
+pitchpulse/model_dataset/      Leakage-safe model dataset assembly
+pitchpulse/model_training/     Baselines, XGBoost, calibration, evaluation, valuation
+pitchpulse/player_vaep/        Minutes calculation and player aggregation
+pitchpulse/reproducibility/    Independent rebuild and artifact comparison
+pitchpulse/pipelines/          End-to-end orchestration
+artifacts/                    Generated features, models, values, and reports
+tests/                        Unit, integration, and end-to-end test areas
 ```
 
-Mỗi state VAEP gồm đúng ba action: action hiện tại (`a0`) và hai action
-trước (`a1`, `a2`). Feature baseline dùng bộ transformer mặc định của
-socceraction; feature 360 vẫn là enrichment tùy chọn. Không feature nào nhìn
-action tương lai.
+## Current scope
 
-Đầu ra chính là bảng/file `actions` và `action_features`. Plan 04 dùng chúng để train hai model XGBoost độc lập:
+PitchPulse is currently a production-style offline data and ML pipeline. The FastAPI backend, interactive scouting dashboard, and conversational analyst are not implemented in this repository yet. The analytics use event data and optional event-linked 360 snapshots, not continuous player tracking or video. VAEP supports scouting decisions; it does not replace contextual video review or human recruitment judgment.
 
-```text
-P_score(state_i)   = P(đội thực hiện action ghi bàn trong 10 action tiếp theo)
-P_concede(state_i) = P(đội thực hiện action thủng lưới trong 10 action tiếp theo)
-```
+## Documentation
 
-Giá trị của action `a_i` được tính từ thay đổi xác suất trước và sau action:
-
-```text
-VAEP(a_i) = [P_score(after_i) - P_score(before_i)]
-          + [P_concede(before_i) - P_concede(after_i)]
-```
-
-VAEP sau đó được cộng theo cầu thủ và chuẩn hóa trên 90 phút để tạo bảng xếp hạng scouting. StatsBomb 360 bổ sung context không gian khi có; action không có 360 vẫn được giữ trong baseline.
-
-## Cấu trúc chính
-
-```text
-apps/                            Backend và frontend deploy độc lập
-matchmind/                       Python package dùng chung
-├── corpus/                      Corpus manifest và match metadata
-├── ingestion/                   Normalize, validate và ghi PostgreSQL
-├── spadl/                       Đọc canonical events và tạo SPADL actions
-├── vaep_features/               Action states và VAEP feature engineering
-├── labeling_and_splitting/      Targets và chronological splits
-├── model_dataset/               Join dữ liệu thành model_dataset.parquet
-├── model_training/              Training và evaluation
-├── ai/                          AI analyst, prompts và tools
-├── pipelines/                   Các pipeline entrypoint
-└── shared/                      Config, contracts và logging dùng chung
-
-configs/datasets/                Manifest khóa phiên bản dataset
-data/bronze/                     StatsBomb JSON nguyên bản, không commit vào Git
-infra/db/migrations/             PostgreSQL schema và rollback
-infra/pgadmin/                   Cấu hình pgAdmin
-tests/                           Unit, integration và end-to-end tests
-artifacts/                       Features, models, runs và reports sinh tự động
-docs/                            Kiến trúc, data dictionary và kế hoạch
-```
-
-Xem luồng dữ liệu tại [docs/architecture/data-flow.md](docs/architecture/data-flow.md).
+- [Architecture overview](docs/architecture/overview.md)
+- [Data flow](docs/architecture/data-flow.md)
+- [Bronze contract](docs/architecture/bronze-layer.md)
+- [Silver contract](docs/architecture/silver-layer.md)
+- [Gold contract](docs/architecture/gold-layer.md)
+- [Database migrations](infra/db/migrations/README.md)
+- [Pipeline entrypoints](pitchpulse/pipelines/README.md)
 
 ---
 
-MatchMind đang được xây dựng theo một nguyên tắc đơn giản: **phân tích hay chỉ có giá trị khi dữ liệu phía dưới đáng tin cậy**.
+PitchPulse is built around one principle: football analytics is useful only when its data, features, models, and outputs can be traced and reproduced.

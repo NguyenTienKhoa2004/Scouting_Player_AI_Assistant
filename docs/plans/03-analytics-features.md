@@ -123,7 +123,7 @@ conversion. Source-reversed tactical intervals remain explicit warnings.
 The feature-building stage runs this validation automatically before conversion.
 
 Tasks 2-3 are implemented by the adapter in
-`matchmind/spadl/converter.py`. It reconstructs socceraction's
+`pitchpulse/spadl/converter.py`. It reconstructs socceraction's
 StatsBomb dataframe from preserved raw payloads, calls the official converter,
 then restores source-event traceability and emits a deterministic report.
 
@@ -134,7 +134,7 @@ features use separate immutable version identifiers. The baseline uses
 
 Task 7 is implemented by migration `003_spadl_analytics`,
 `PostgresAnalyticsWriter`, `ParquetArtifactWriter`, and the
-`matchmind/vaep_features/run.py` orchestrator. Task 8 is covered by adapter,
+`pitchpulse/vaep_features/run.py` orchestrator. Task 8 is covered by adapter,
 state/feature, temporal-safety, 360, and Parquet tests. Exact semantics are
 documented in `docs/plan03-feature-contracts.md`.
 

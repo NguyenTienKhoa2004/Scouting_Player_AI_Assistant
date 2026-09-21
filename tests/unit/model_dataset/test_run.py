@@ -10,7 +10,7 @@ from unittest.mock import ANY, Mock, patch
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.model_dataset import run  # noqa: E402
+from pitchpulse.model_dataset import run  # noqa: E402
 
 
 class ChunkedPreparationRunTests(unittest.TestCase):

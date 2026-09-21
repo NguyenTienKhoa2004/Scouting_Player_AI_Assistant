@@ -8,12 +8,12 @@ without copying or rebuilding existing data.
 
 ```text
 meta.analytics_runs
-gold.analytics_actions
-gold.analytics_action_features
+gold.spadl_actions
+gold.spadl_action_features
 ```
 
-`gold.analytics_actions` has one deterministic SPADL action per
-`(run_id, match_id, action_id)`. `gold.analytics_action_features` has exactly
+`gold.spadl_actions` has one deterministic SPADL action per
+`(run_id, match_id, action_id)`. `gold.spadl_action_features` has exactly
 one point-in-time-safe feature object for each action. `meta.analytics_runs`
 stores execution status, versions, row counts, artifact location, and quality
 reports; it is control metadata rather than an analytical fact table.

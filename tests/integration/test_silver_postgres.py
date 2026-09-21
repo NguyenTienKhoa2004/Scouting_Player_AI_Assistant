@@ -15,19 +15,19 @@ from psycopg.conninfo import conninfo_to_dict, make_conninfo
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.ingestion.postgres_writer import PostgresDataWriter  # noqa: E402
-from matchmind.ingestion.normalizer import CanonicalEvent  # noqa: E402
-from matchmind.ingestion.lineup_normalizer import (  # noqa: E402
+from pitchpulse.ingestion.postgres_writer import PostgresDataWriter  # noqa: E402
+from pitchpulse.ingestion.normalizer import CanonicalEvent  # noqa: E402
+from pitchpulse.ingestion.lineup_normalizer import (  # noqa: E402
     CanonicalLineupInterval,
 )
-from matchmind.ingestion.reader import RawRecord  # noqa: E402
-from matchmind.ingestion.three_sixty_normalizer import (  # noqa: E402
+from pitchpulse.ingestion.reader import RawRecord  # noqa: E402
+from pitchpulse.ingestion.three_sixty_normalizer import (  # noqa: E402
     Canonical360Frame,
 )
-from matchmind.spadl.input_reader import PostgresSpadlInputReader  # noqa: E402
+from pitchpulse.spadl.input_reader import PostgresSpadlInputReader  # noqa: E402
 
 
-TEST_DATABASE_URL = os.environ.get("MATCHMIND_INTEGRATION_DATABASE_URL")
+TEST_DATABASE_URL = os.environ.get("PITCHPULSE_INTEGRATION_DATABASE_URL")
 MIGRATIONS = tuple(
     PROJECT_ROOT / "infra" / "db" / "migrations" / name
     for name in (
@@ -36,18 +36,20 @@ MIGRATIONS = tuple(
         "003_spadl_analytics.up.sql",
         "004_medallion_silver.up.sql",
         "005_medallion_gold.up.sql",
+        "006_vaep_modeling.up.sql",
+        "007_spadl_table_names.up.sql",
     )
 )
 
 
 @unittest.skipUnless(
     TEST_DATABASE_URL,
-    "set MATCHMIND_INTEGRATION_DATABASE_URL to run PostgreSQL integration tests",
+    "set PITCHPULSE_INTEGRATION_DATABASE_URL to run PostgreSQL integration tests",
 )
 class SilverPostgresIntegrationTests(unittest.TestCase):
     def setUp(self) -> None:
         assert TEST_DATABASE_URL is not None
-        self.database_name = f"matchmind_silver_test_{uuid4().hex[:12]}"
+        self.database_name = f"pitchpulse_silver_test_{uuid4().hex[:12]}"
         self.admin = psycopg.connect(TEST_DATABASE_URL, autocommit=True)
         self.admin.execute(
             sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.database_name))
@@ -77,8 +79,8 @@ class SilverPostgresIntegrationTests(unittest.TestCase):
             "silver.events",
             "silver.player_match_intervals",
             "silver.event_360",
-            "gold.analytics_actions",
-            "gold.analytics_action_features",
+            "gold.spadl_actions",
+            "gold.spadl_action_features",
         )
         row = self.connection.execute(
             "SELECT " + ", ".join(f"to_regclass('{name}')" for name in expected)
@@ -222,6 +224,24 @@ class SilverPostgresIntegrationTests(unittest.TestCase):
         self.assertEqual(len(loaded.three_sixty_by_event), 1)
 
     def test_down_migration_restores_the_pre_silver_layout(self) -> None:
+        spadl_names_down = (
+            PROJECT_ROOT
+            / "infra"
+            / "db"
+            / "migrations"
+            / "007_spadl_table_names.down.sql"
+        )
+        self.connection.execute(spadl_names_down.read_text(encoding="utf-8"))
+
+        vaep_down = (
+            PROJECT_ROOT
+            / "infra"
+            / "db"
+            / "migrations"
+            / "006_vaep_modeling.down.sql"
+        )
+        self.connection.execute(vaep_down.read_text(encoding="utf-8"))
+
         gold_down = (
             PROJECT_ROOT
             / "infra"
@@ -253,7 +273,7 @@ class SilverPostgresIntegrationTests(unittest.TestCase):
         )
         self.assertIsNone(
             self.connection.execute(
-                "SELECT to_regclass('gold.analytics_actions')"
+                "SELECT to_regclass('gold.spadl_actions')"
             ).fetchone()[0]
         )
 

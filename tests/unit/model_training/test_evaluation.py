@@ -8,7 +8,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.model_training.evaluation import binary_probability_report  # noqa: E402
+from pitchpulse.model_training.evaluation import binary_probability_report  # noqa: E402
+from pitchpulse.model_training.calibration import (  # noqa: E402
+    fit_probability_calibrator,
+)
 
 
 class BinaryProbabilityReportTests(unittest.TestCase):
@@ -25,6 +28,20 @@ class BinaryProbabilityReportTests(unittest.TestCase):
         self.assertEqual(
             report["inference_latency"]["microseconds_per_row"], 1000.0
         )
+
+    def test_fitted_calibrator_returns_bounded_probabilities(self) -> None:
+        probabilities = [0.05, 0.20, 0.40, 0.60, 0.80, 0.95]
+        truth = [0, 0, 0, 1, 1, 1]
+
+        calibrator = fit_probability_calibrator(
+            probabilities, truth, random_seed=7
+        )
+        calibrated = calibrator.predict(probabilities)
+
+        self.assertEqual(calibrator.method, "sigmoid")
+        self.assertEqual(len(calibrated), len(probabilities))
+        self.assertTrue(((calibrated >= 0.0) & (calibrated <= 1.0)).all())
+        self.assertLess(calibrated[0], calibrated[-1])
 
 
 if __name__ == "__main__":

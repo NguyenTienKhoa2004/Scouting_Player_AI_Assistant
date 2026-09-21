@@ -45,7 +45,7 @@ If working part-time or learning multiple stack components, use 10–12 weeks ra
 
 ## Portfolio message
 
-> MatchMind transforms StatsBomb event and 360 data into SPADL-style actions, values each action with calibrated VAEP models, and helps scouts discover players whose contributions are missed by traditional statistics.
+> PitchPulse transforms StatsBomb event and 360 data into SPADL-style actions, values each action with calibrated VAEP models, and helps scouts discover players whose contributions are missed by traditional statistics.
 
 ## Definition of Done
 

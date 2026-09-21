@@ -1,12 +1,12 @@
 {
   "Servers": {
     "1": {
-      "Name": "MatchMind PostgreSQL",
+      "Name": "PitchPulse PostgreSQL",
       "Group": "Servers",
       "Host": "postgres",
       "Port": 5432,
-      "MaintenanceDB": "matchmind",
-      "Username": "matchmind",
+      "MaintenanceDB": "pitchpulse",
+      "Username": "pitchpulse",
       "SSLMode": "prefer"
     }
   }

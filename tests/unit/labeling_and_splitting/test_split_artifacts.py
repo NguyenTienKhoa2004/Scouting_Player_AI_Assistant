@@ -15,12 +15,12 @@ import pyarrow.parquet as pq
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.labeling_and_splitting.splits import (  # noqa: E402
+from pitchpulse.labeling_and_splitting.splits import (  # noqa: E402
     SPLIT_VERSION,
     ChronologicalMatchSplitter,
 )
-from matchmind.labeling_and_splitting.targets import TARGET_POLICY_VERSION  # noqa: E402
-from matchmind.labeling_and_splitting.split_artifacts import (  # noqa: E402
+from pitchpulse.labeling_and_splitting.targets import TARGET_POLICY_VERSION  # noqa: E402
+from pitchpulse.labeling_and_splitting.split_artifacts import (  # noqa: E402
     ChunkedSplitArtifactWriter,
 )
 

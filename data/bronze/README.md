@@ -1,6 +1,6 @@
 # Bronze data
 
-Bronze is the immutable landing layer for provider-native files. MatchMind reads
+Bronze is the immutable landing layer for provider-native files. PitchPulse reads
 StatsBomb JSON from:
 
 ```text
@@ -36,5 +36,5 @@ a new dataset-manifest version and rebuild downstream layers.
 Validate Bronze independently of PostgreSQL:
 
 ```powershell
-py -3.12 -m matchmind.corpus.validate_bronze
+py -3.12 -m pitchpulse.corpus.validate_bronze
 ```

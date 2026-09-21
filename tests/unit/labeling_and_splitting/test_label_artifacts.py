@@ -15,15 +15,15 @@ from socceraction.spadl import config as spadlconfig
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.labeling_and_splitting.label_artifacts import (  # noqa: E402
+from pitchpulse.labeling_and_splitting.label_artifacts import (  # noqa: E402
     ChunkedTargetLabelWriter,
 )
-from matchmind.spadl.converter import (  # noqa: E402
+from pitchpulse.spadl.converter import (  # noqa: E402
     ACTION_MAPPING_VERSION,
     COORDINATE_SYSTEM_VERSION,
 )
-from matchmind.vaep_features.action_state import STATE_CONTRACT_VERSION  # noqa: E402
-from matchmind.vaep_features.feature_builder import BASE_FEATURE_VERSION  # noqa: E402
+from pitchpulse.vaep_features.action_state import STATE_CONTRACT_VERSION  # noqa: E402
+from pitchpulse.vaep_features.feature_builder import BASE_FEATURE_VERSION  # noqa: E402
 
 
 class ChunkedTargetLabelWriterTests(unittest.TestCase):

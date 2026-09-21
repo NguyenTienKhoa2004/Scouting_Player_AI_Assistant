@@ -11,7 +11,7 @@ from socceraction.spadl import config as spadlconfig
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.labeling_and_splitting.targets import (  # noqa: E402
+from pitchpulse.labeling_and_splitting.targets import (  # noqa: E402
     PENALTY_SHOOTOUT_EXCLUSION,
     TARGET_POLICY_VERSION,
     TargetLabelBuilder,
@@ -63,6 +63,27 @@ class TargetLabelBuilderTests(unittest.TestCase):
         self.assertTrue(labels[1]["scores"])
         self.assertTrue(labels[10]["scores"])
 
+    def test_target_window_stops_at_match_boundary(self) -> None:
+        actions = self._actions(
+            [
+                self._row(0, match_id=101, team_id=1),
+                self._row(
+                    0,
+                    match_id=202,
+                    team_id=1,
+                    action_type="shot",
+                    result="success",
+                ),
+            ]
+        )
+
+        labels = TargetLabelBuilder().build(
+            actions, analytics_run_id=None
+        ).labels.to_pylist()
+
+        self.assertFalse(labels[0]["scores"])
+        self.assertTrue(labels[1]["scores"])
+
     def test_own_goal_uses_socceraction_acting_team_perspective(self) -> None:
         actions = self._actions(
             [
@@ -101,6 +122,7 @@ class TargetLabelBuilderTests(unittest.TestCase):
     def _row(
         action_id: int,
         *,
+        match_id: int = 101,
         team_id: int,
         action_type: str = "pass",
         result: str = "success",
@@ -108,7 +130,7 @@ class TargetLabelBuilderTests(unittest.TestCase):
         is_shootout: bool = False,
     ) -> dict[str, object]:
         return {
-            "match_id": 101,
+            "match_id": match_id,
             "action_id": action_id,
             "period_id": period_id,
             "team_id": team_id,

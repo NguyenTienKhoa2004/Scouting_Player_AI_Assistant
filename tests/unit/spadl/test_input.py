@@ -11,19 +11,19 @@ from uuid import UUID
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.spadl import (  # noqa: E402
+from pitchpulse.spadl import (  # noqa: E402
     SpadlInputContractError,
     validate_spadl_input,
 )
-from matchmind.spadl.input_reader import (  # noqa: E402
+from pitchpulse.spadl.input_reader import (  # noqa: E402
     PostgresSpadlInputReader,
     SPADL_INPUT_SCHEMA,
 )
-from matchmind.ingestion.normalizer import CanonicalEvent  # noqa: E402
-from matchmind.ingestion.lineup_normalizer import (  # noqa: E402
+from pitchpulse.ingestion.normalizer import CanonicalEvent  # noqa: E402
+from pitchpulse.ingestion.lineup_normalizer import (  # noqa: E402
     CanonicalLineupInterval,
 )
-from matchmind.ingestion.three_sixty_normalizer import (  # noqa: E402
+from pitchpulse.ingestion.three_sixty_normalizer import (  # noqa: E402
     Canonical360Frame,
 )
 

@@ -2,7 +2,7 @@
 
 ## Objective
 
-Build a read-only conversational analyst that answers questions about matches, periods, players, and VAEP by calling deterministic MatchMind services and explaining their returned evidence.
+Build a read-only conversational analyst that answers questions about matches, periods, players, and VAEP by calling deterministic PitchPulse services and explaining their returned evidence.
 
 The agent is an optional layer after the core scouting MVP. It must not calculate football metrics itself, query unrestricted SQL, retrain models, or modify project data.
 

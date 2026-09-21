@@ -11,14 +11,14 @@ from uuid import UUID
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.spadl import (  # noqa: E402
+from pitchpulse.spadl import (  # noqa: E402
     ACTION_MAPPING_VERSION,
     ConversionError,
     EventToActionConverter,
     SpadlInput,
     SpadlInputValidationReport,
 )
-from matchmind.ingestion.normalizer import CanonicalEvent  # noqa: E402
+from pitchpulse.ingestion.normalizer import CanonicalEvent  # noqa: E402
 
 
 class SocceractionConverterTests(unittest.TestCase):

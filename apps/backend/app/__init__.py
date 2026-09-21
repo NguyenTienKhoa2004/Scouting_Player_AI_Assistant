@@ -1,1 +1,1 @@
-"""MatchMind backend application package."""
+"""PitchPulse backend application package."""

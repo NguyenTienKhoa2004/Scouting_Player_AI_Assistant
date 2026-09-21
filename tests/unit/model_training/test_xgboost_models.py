@@ -15,15 +15,17 @@ import pyarrow.parquet as pq
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.model_dataset.builder import feature_allowlist_manifest  # noqa: E402
-from matchmind.model_training.logistic_baseline import LogisticBaselineTrainer  # noqa: E402
-from matchmind.model_training.xgboost_models import (  # noqa: E402
+from pitchpulse.model_dataset.feature_allowlist import (  # noqa: E402
+    feature_allowlist_manifest,
+)
+from pitchpulse.model_training.logistic_baseline import LogisticBaselineTrainer  # noqa: E402
+from pitchpulse.model_training.xgboost_models import (  # noqa: E402
     XGBoostTrainingError,
     XGBoostVaepTrainer,
 )
-from matchmind.model_training.xgboost_data import load_split  # noqa: E402
-from matchmind.vaep_features.feature_dataset_loader import baseline_feature_allowlist  # noqa: E402
-from matchmind.vaep_features.feature_builder import BASE_FEATURE_VERSION  # noqa: E402
+from pitchpulse.model_training.xgboost_data import load_split  # noqa: E402
+from pitchpulse.vaep_features.feature_dataset_loader import baseline_feature_allowlist  # noqa: E402
+from pitchpulse.vaep_features.feature_builder import BASE_FEATURE_VERSION  # noqa: E402
 
 
 class XGBoostVaepTrainerTests(unittest.TestCase):

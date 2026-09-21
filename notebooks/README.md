@@ -1,4 +1,4 @@
 # Notebooks
 
 Use `exploration/` for data discovery and `experiments/` for disposable model
-experiments. Production logic belongs in `matchmind`.
+experiments. Production logic belongs in `pitchpulse`.

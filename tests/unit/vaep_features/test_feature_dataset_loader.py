@@ -14,15 +14,15 @@ import pyarrow.parquet as pq
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.spadl import (  # noqa: E402
+from pitchpulse.spadl import (  # noqa: E402
     ACTION_MAPPING_VERSION,
     COORDINATE_SYSTEM_VERSION,
 )
-from matchmind.vaep_features import (  # noqa: E402
+from pitchpulse.vaep_features import (  # noqa: E402
     BASE_FEATURE_VERSION,
     STATE_CONTRACT_VERSION,
 )
-from matchmind.vaep_features.feature_dataset_loader import (  # noqa: E402
+from pitchpulse.vaep_features.feature_dataset_loader import (  # noqa: E402
     FeatureDatasetValidationError,
     ValidatedFeatureDatasetLoader,
     baseline_feature_allowlist,

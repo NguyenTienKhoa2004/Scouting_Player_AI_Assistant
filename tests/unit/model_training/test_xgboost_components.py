@@ -10,12 +10,12 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.model_training.xgboost_contracts import (  # noqa: E402
+from pitchpulse.model_training.xgboost_contracts import (  # noqa: E402
     TARGETS,
     XGBoostTrainingError,
 )
-from matchmind.model_training.xgboost_data import validate_phase_targets  # noqa: E402
-from matchmind.model_training.xgboost_training import (  # noqa: E402
+from pitchpulse.model_training.xgboost_data import validate_phase_targets  # noqa: E402
+from pitchpulse.model_training.xgboost_training import (  # noqa: E402
     beats_baseline,
     candidate_rank,
 )

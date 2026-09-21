@@ -1,0 +1,16 @@
+{
+  "calibration_bins": 10,
+  "error_examples_per_target": 20,
+  "minimum_group_rows": 100,
+  "policy_version": "vaep-test-evaluation-v1",
+  "quality_gates": {
+    "maximum_brier_to_positive_frequency_ratio": 1.0,
+    "minimum_pr_auc_to_positive_frequency_ratio": 1.0,
+    "require_both_models_beat_logistic_validation": true
+  },
+  "schema_version": 1,
+  "thresholds": {
+    "concedes": 0.5,
+    "scores": 0.5
+  }
+}

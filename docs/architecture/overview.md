@@ -1,4 +1,4 @@
-# MatchMind architecture
+# PitchPulse architecture
 
 ```mermaid
 flowchart TB

@@ -1,6 +1,6 @@
-# MatchMind AI — Plan Index
+# PitchPulse — Plan Index
 
-MatchMind converts StatsBomb event and 360 data into socceraction SPADL actions, VAEP action values, and evidence-backed player scouting views.
+PitchPulse converts StatsBomb event and 360 data into socceraction SPADL actions, VAEP action values, and evidence-backed player scouting views.
 
 ## Shared rules
 

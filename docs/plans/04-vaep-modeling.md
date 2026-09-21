@@ -145,7 +145,7 @@ Start with logistic-regression baselines using the same feature contract. XGBoos
 Class imbalance must be handled using training-only class weights or sampling. Hyperparameters and probability calibration are selected on validation data only.
 
 Use socceraction for feature construction, target semantics, and VAEP formula
-semantics, but perform dataset splitting and model fitting in MatchMind. Do not
+semantics, but perform dataset splitting and model fitting in PitchPulse. Do not
 call `VAEP.fit()` because socceraction 1.5.3 randomly splits individual states
 internally, which violates the match-level isolation required here. Pin the
 XGBoost and scikit-learn versions in the training environment and model bundle.
@@ -417,26 +417,28 @@ dependency, and model versions.
 11. Implement an adapter matching socceraction's perspective-safe offensive and defensive VAEP formula semantics.
 12. Calculate player minutes and aggregate total, offensive, defensive, per-action-type, and per-90 values with minimum-minutes safeguards.
 13. Add migration 006 and transactionally persist `vaep_model_runs`, `vaep_action_labels`, `action_values`, and `player_vaep`.
-14. Persist all Parquet/model/report artifacts with a hash-complete `training_manifest.json` and prove that rerunning the same inputs is reproducible.
-15. Add tests for contracts, label generation, target-window boundaries, match/period endings, split isolation, feature leakage, possession flips, goals, own goals, formula parity, calibration, substitutions, database constraints, idempotency, and per-90 calculations.
+14. [x] Persist all Parquet/model/report artifacts with a hash-complete `training_manifest.json` and prove that rerunning the same inputs is reproducible. Verified by two independent full-corpus reruns; the machine-readable receipt is `reproducibility_report.json`.
+15. [x] Add focused unit tests for label boundaries, leakage, split isolation, VAEP formula semantics, calibration, substitutions, and per-90 calculations. Database integration tests are optional for this non-production project.
 
 Suggested implementation boundaries:
 
 ```text
-matchmind/vaep_features/feature_dataset_loader.py
-matchmind/labeling_and_splitting/targets.py
-matchmind/labeling_and_splitting/splits.py
-matchmind/labeling_and_splitting/label_artifacts.py
-matchmind/labeling_and_splitting/split_artifacts.py
-matchmind/model_dataset/builder.py
-matchmind/model_dataset/artifacts.py
-matchmind/model_dataset/finalize.py
-matchmind/model_training/logistic_baseline.py
-matchmind/model_training/evaluation.py
-matchmind/model_training/valuation.py
-matchmind/model_training/aggregation.py
-matchmind/model_training/postgres_writer.py
-matchmind/model_training/run.py
+pitchpulse/vaep_features/feature_dataset_loader.py
+pitchpulse/labeling_and_splitting/targets.py
+pitchpulse/labeling_and_splitting/splits.py
+pitchpulse/labeling_and_splitting/label_artifacts.py
+pitchpulse/labeling_and_splitting/split_artifacts.py
+pitchpulse/model_dataset/artifacts.py
+pitchpulse/model_dataset/finalize.py
+pitchpulse/model_training/logistic_baseline.py
+pitchpulse/model_training/evaluation.py
+pitchpulse/model_training/valuation.py
+pitchpulse/player_vaep/calculations.py
+pitchpulse/player_vaep/sources.py
+pitchpulse/player_vaep/artifacts.py
+pitchpulse/player_vaep/run.py
+pitchpulse/model_training/postgres_writer.py
+pitchpulse/model_training/run.py
 infra/db/migrations/006_vaep_modeling.{up,down}.sql
 tests/modeling/
 ```

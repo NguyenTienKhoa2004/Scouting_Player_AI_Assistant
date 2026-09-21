@@ -12,16 +12,16 @@ from unittest.mock import patch
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.corpus.training_dataset_validator import (  # noqa: E402
+from pitchpulse.corpus.training_dataset_validator import (  # noqa: E402
     TRAINING_CORPUS_SCHEMA_VERSION,
     TrainingCorpusError,
     load_training_corpus_manifest,
 )
-from matchmind.corpus.bronze import (  # noqa: E402
+from pitchpulse.corpus.bronze import (  # noqa: E402
     BronzeSourceError,
     validate_bronze_repository,
 )
-from matchmind.model_dataset.training_manifest import (  # noqa: E402
+from pitchpulse.model_dataset.training_manifest import (  # noqa: E402
     TrainingCorpusNotReady,
     require_training_corpus_ready,
 )
@@ -79,7 +79,7 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
     def test_bronze_repository_rejects_wrong_commit(self) -> None:
         expected = "a" * 40
         with patch(
-            "matchmind.corpus.bronze._git",
+            "pitchpulse.corpus.bronze._git",
             return_value="b" * 40,
         ):
             with self.assertRaisesRegex(BronzeSourceError, "commit mismatch"):
@@ -88,7 +88,7 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
     def test_bronze_repository_rejects_local_changes(self) -> None:
         expected = "a" * 40
         with patch(
-            "matchmind.corpus.bronze._git",
+            "pitchpulse.corpus.bronze._git",
             side_effect=[expected, " M data/events/1.json"],
         ):
             with self.assertRaisesRegex(BronzeSourceError, "local changes"):

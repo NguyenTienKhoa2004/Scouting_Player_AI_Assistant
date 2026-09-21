@@ -11,8 +11,8 @@ import pyarrow as pa
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.corpus.match_metadata import MatchMetadata  # noqa: E402
-from matchmind.labeling_and_splitting.splits import (  # noqa: E402
+from pitchpulse.corpus.match_metadata import MatchMetadata  # noqa: E402
+from pitchpulse.labeling_and_splitting.splits import (  # noqa: E402
     SPLIT_VERSION,
     ChronologicalMatchSplitter,
     SplitAssignmentError,

@@ -1,1 +1,1 @@
-"""MatchMind test suite."""
+"""PitchPulse test suite."""

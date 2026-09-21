@@ -8,7 +8,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.ingestion import IngestionCounts  # noqa: E402
+from pitchpulse.ingestion import IngestionCounts  # noqa: E402
 
 
 class IngestionCountsTests(unittest.TestCase):

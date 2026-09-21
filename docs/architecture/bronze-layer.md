@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Bronze is the reproducible boundary between StatsBomb Open Data and MatchMind.
+Bronze is the reproducible boundary between StatsBomb Open Data and PitchPulse.
 It retains provider JSON without mutation so every downstream table or artifact
 can be rebuilt from a pinned source revision.
 

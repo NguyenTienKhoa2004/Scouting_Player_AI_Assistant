@@ -12,7 +12,7 @@ from uuid import UUID
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from matchmind.ingestion import (  # noqa: E402
+from pitchpulse.ingestion import (  # noqa: E402
     Canonical360Frame,
     Canonical360Validator,
     CanonicalEvent,
