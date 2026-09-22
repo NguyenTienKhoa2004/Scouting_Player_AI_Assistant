@@ -4,19 +4,14 @@
 
 PitchPulse is an end-to-end football analytics and machine-learning system that measures how every on-ball action changes a team's probability of scoring or conceding. It is designed for player scouting and performance analysis: passes, carries, shots, recoveries, duels, and other actions are valued in context, then aggregated into offensive, defensive, total, and per-90 player metrics.
 
-The repository contains the complete batch analytics core: versioned data ingestion, validation, feature engineering, model training, frozen-test evaluation, action valuation, player aggregation, PostgreSQL persistence, and reproducibility checks.
+The repository contains the complete offline data and machine-learning pipeline. It imports and validates football data, creates model features, trains and evaluates models, calculates action and player values, stores the results in PostgreSQL, and verifies that the results can be reproduced.
 
-## What the project delivers
+## Key capabilities
 
-- A pinned, checksum-validated StatsBomb Open Data corpus.
-- An idempotent Bronze-to-Silver ingestion pipeline for matches, events, lineups, and optional StatsBomb 360 frames.
-- Deterministic conversion from canonical events to SPADL actions.
-- Leakage-safe action-state features using only the current and two previous actions.
-- Independent `P_score` and `P_concede` models with logistic baselines, XGBoost training, probability calibration, and a frozen test set.
-- VAEP values for every eligible action.
-- Player aggregates by match and competition-season, including total, offensive, defensive, and per-90 VAEP.
-- Versioned Parquet artifacts and PostgreSQL Gold tables with lineage, hashes, run metadata, and quality reports.
-- A reproducibility workflow that rebuilds and compares model artifacts.
+- A validated, versioned Bronze-to-Silver-to-Gold data pipeline for StatsBomb Open Data and optional 360 frames.
+- Deterministic SPADL conversion and leakage-safe point-in-time features built from the current and two previous actions.
+- Calibrated `P_score` and `P_concede` models with chronological match-level splits, logistic baselines, XGBoost training, and frozen-test evaluation.
+- Action and player VAEP metrics, backed by versioned Parquet and PostgreSQL artifacts with lineage and reproducibility checks.
 
 ## System architecture
 
@@ -165,16 +160,14 @@ Both targets passed the configured quality gate and beat their logistic baseline
 ### Requirements
 
 - Python 3.12+
+- uv
 - Docker Desktop with Docker Compose
 - Git
 
 ### 1. Create the environment
 
 ```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+uv sync
 Copy-Item .env.example .env
 ```
 
@@ -183,7 +176,7 @@ Copy-Item .env.example .env
 ```powershell
 git clone https://github.com/statsbomb/open-data.git data/bronze/statsbomb-open-data
 git -C data/bronze/statsbomb-open-data checkout b0bc9f22dd77c206ddedc1d742893b3bbe64baec
-python -m pitchpulse.corpus.validate_bronze
+uv run python -m pitchpulse.corpus.validate_bronze
 ```
 
 StatsBomb Open Data is subject to its own license and attribution requirements. Keep its `LICENSE.pdf` with the local Bronze copy.
@@ -214,7 +207,7 @@ Change local credentials and ports in `.env` before using the stack outside a di
 ### 4. Run the complete pipeline
 
 ```powershell
-python -m pitchpulse.pipelines.run_all
+uv run python -m pitchpulse.pipelines.run_all
 ```
 
 This command executes ingestion, SPADL and feature generation, feature registration, label and dataset creation, model training, frozen-test evaluation, action valuation, player aggregation, and PostgreSQL persistence in dependency order.
@@ -225,47 +218,47 @@ The full corpus produces large Parquet artifacts and millions of database rows. 
 
 ```powershell
 # Bronze -> PostgreSQL Silver
-python -m pitchpulse.ingestion.run
+uv run python -m pitchpulse.ingestion.run
 
 # Silver -> SPADL actions and point-in-time features
-python -m pitchpulse.vaep_features.run
-python -m pitchpulse.vaep_features.register_corpus
+uv run python -m pitchpulse.vaep_features.run
+uv run python -m pitchpulse.vaep_features.register_corpus
 
 # Labels, chronological splits, and model dataset
-python -m pitchpulse.model_dataset.run
+uv run python -m pitchpulse.model_dataset.run
 
 # Logistic baselines, XGBoost selection, and calibration
-python -m pitchpulse.model_training.run
+uv run python -m pitchpulse.model_training.run
 
 # One-time evaluation of the frozen model bundle
-python -m pitchpulse.model_training.run_test_evaluation
+uv run python -m pitchpulse.model_training.run_test_evaluation
 
 # Calibrated inference and action-level VAEP
-python -m pitchpulse.model_training.run_valuation
+uv run python -m pitchpulse.model_training.run_valuation
 
 # Player-level aggregation; change the ranking threshold if needed
-python -m pitchpulse.player_vaep.run --minimum-minutes 450
+uv run python -m pitchpulse.player_vaep.run --minimum-minutes 450
 
 # Persist completed labels, action values, and player aggregates
-python -m pitchpulse.model_training.run_persistence
+uv run python -m pitchpulse.model_training.run_persistence
 ```
 
 To enable the separate StatsBomb 360 feature contract:
 
 ```powershell
-python -m pitchpulse.vaep_features.run --include-360
+uv run python -m pitchpulse.vaep_features.run --include-360
 ```
 
 To independently rebuild the modeling stages and compare artifact hashes:
 
 ```powershell
-python -m pitchpulse.reproducibility.run
+uv run python -m pitchpulse.reproducibility.run
 ```
 
 ## Testing
 
 ```powershell
-python -m unittest discover -s tests -v
+uv run python -m unittest discover -s tests -v
 ```
 
 The suite covers raw and canonical validation, idempotent ingestion, SPADL conversion, feature contracts, target generation, chronological splits, model datasets, training and evaluation components, VAEP calculations, player aggregation, PostgreSQL integration, pipeline orchestration, and reproducibility verification.
@@ -301,6 +294,7 @@ PitchPulse is currently a production-style offline data and ML pipeline. The Fas
 
 ## Documentation
 
+- [Hướng dẫn chạy đầy đủ](docs/RUNBOOK.md)
 - [Architecture overview](docs/architecture/overview.md)
 - [Data flow](docs/architecture/data-flow.md)
 - [Bronze contract](docs/architecture/bronze-layer.md)
