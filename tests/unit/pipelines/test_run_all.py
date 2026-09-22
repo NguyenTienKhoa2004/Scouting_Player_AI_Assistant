@@ -17,7 +17,7 @@ class RunAllPipelineTests(unittest.TestCase):
         expected_modules = [
             "pitchpulse.ingestion.run",
             "pitchpulse.vaep_features.run",
-            "pitchpulse.vaep_features.register_corpus",
+            "pitchpulse.vaep_features.register_dataset",
             "pitchpulse.model_dataset.run",
             "pitchpulse.model_training.run",
             "pitchpulse.model_training.run_test_evaluation",

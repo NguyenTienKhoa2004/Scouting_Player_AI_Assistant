@@ -1,6 +1,8 @@
 """StatsBomb raw validation, normalization, and PostgreSQL ingestion."""
 
 from .normalizer import CanonicalEvent, NormalizationError, StatsBombEventNormalizer
+from .fingerprint import MatchContentFingerprint, fingerprint_match_bundle
+from .planner import IngestionPlan, IngestionStatus, PlannedMatch, build_ingestion_plan
 from .lineup_normalizer import CanonicalLineupInterval, StatsBombLineupNormalizer
 from .three_sixty_normalizer import Canonical360Frame, StatsBomb360Normalizer
 from .reader import (
@@ -42,12 +44,16 @@ __all__ = [
     "CanonicalLineupIntervalValidator",
     "EventValidationContext",
     "IngestionCounts",
+    "IngestionPlan",
+    "IngestionStatus",
     "RawStatsBombValidationError",
     "RawStatsBombValidationReport",
     "RawStatsBombValidator",
     "RawValidationIssue",
     "LineupIntervalValidationResult",
+    "MatchContentFingerprint",
     "NormalizationError",
+    "PlannedMatch",
     "RawDataError",
     "RawDataFileNotFoundError",
     "RawDataFormatError",
@@ -61,4 +67,6 @@ __all__ = [
     "ThreeSixtyValidationResult",
     "ValidationIssue",
     "ValidationResult",
+    "build_ingestion_plan",
+    "fingerprint_match_bundle",
 ]

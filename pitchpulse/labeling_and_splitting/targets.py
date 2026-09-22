@@ -94,7 +94,7 @@ class TargetLabelBuilder:
             import pyarrow as pa
         except ImportError as exc:
             raise RuntimeError(
-                "VAEP target generation requires pyarrow; install requirements.txt"
+                "VAEP target generation requires pyarrow; run `uv sync`"
             ) from exc
 
         missing = self.REQUIRED_COLUMNS - set(actions.column_names)

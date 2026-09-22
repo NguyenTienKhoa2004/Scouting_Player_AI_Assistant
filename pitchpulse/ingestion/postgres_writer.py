@@ -71,7 +71,10 @@ class PostgresDataWriter:
             under_pressure = EXCLUDED.under_pressure,
             counterpress = EXCLUDED.counterpress,
             related_event_ids = EXCLUDED.related_event_ids,
-            raw_details = EXCLUDED.raw_details
+            raw_details = EXCLUDED.raw_details,
+            is_active = TRUE,
+            removed_at = NULL,
+            removed_ingestion_run_id = NULL
     """
 
     def __init__(self, connection: Connection[Any]) -> None:
@@ -86,11 +89,106 @@ class PostgresDataWriter:
             "to_regclass('silver.matches'), "
             "to_regclass('silver.players'), "
             "to_regclass('silver.player_match_intervals'), "
-            "to_regclass('silver.event_360')"
+            "to_regclass('silver.event_360'), "
+            "to_regclass('meta.ingestion_checkpoints')"
         ).fetchone()
         if row is None or any(value is None for value in row):
             raise RuntimeError(
-                "Silver schema is missing. Apply migrations 001 through 004 first."
+                "Ingestion schema is missing. Apply migrations 001 through 010 first."
+            )
+
+    def load_ingestion_checkpoint_hashes(
+        self,
+        *,
+        source: str,
+        competition_id: int,
+        season_id: int,
+    ) -> dict[int, str]:
+        """Load the latest match fingerprints across all dataset versions."""
+
+        rows = self.connection.execute(
+            """
+            SELECT match_id, content_hash
+            FROM meta.ingestion_checkpoints
+            WHERE source = %s
+              AND competition_id = %s
+              AND season_id = %s
+            ORDER BY match_id
+            """,
+            (source, competition_id, season_id),
+        ).fetchall()
+        return {int(row[0]): str(row[1]) for row in rows}
+
+    def upsert_ingestion_checkpoint(
+        self,
+        *,
+        source: str,
+        dataset_id: str,
+        competition_id: int,
+        season_id: int,
+        match_id: int,
+        content_hash: str,
+        source_version: str,
+        ingestion_run_id: int,
+    ) -> None:
+        self.connection.execute(
+            """
+            INSERT INTO meta.ingestion_checkpoints (
+                source, dataset_id, competition_id, season_id, match_id,
+                content_hash, source_version, ingestion_run_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (source, match_id) DO UPDATE SET
+                dataset_id = EXCLUDED.dataset_id,
+                competition_id = EXCLUDED.competition_id,
+                season_id = EXCLUDED.season_id,
+                content_hash = EXCLUDED.content_hash,
+                source_version = EXCLUDED.source_version,
+                processed_at = CURRENT_TIMESTAMP,
+                ingestion_run_id = EXCLUDED.ingestion_run_id
+            """,
+            (
+                source,
+                dataset_id,
+                competition_id,
+                season_id,
+                match_id,
+                content_hash,
+                source_version,
+                ingestion_run_id,
+            ),
+        )
+
+    def delete_ingestion_checkpoint(self, *, source: str, match_id: int) -> None:
+        """Forget a removed match so later runs do not retire it repeatedly."""
+
+        self.connection.execute(
+            """
+            DELETE FROM meta.ingestion_checkpoints
+            WHERE source = %s AND match_id = %s
+            """,
+            (source, match_id),
+        )
+
+    def deactivate_match_snapshot(
+        self,
+        *,
+        ingestion_run_id: int,
+        source: str,
+        match_id: int,
+    ) -> None:
+        """Soft-delete active match rows before reapplying the current snapshot."""
+
+        parameters = (ingestion_run_id, source, match_id)
+        for table in ("event_360", "player_match_intervals", "events"):
+            self.connection.execute(
+                f"""
+                UPDATE silver.{table}
+                SET is_active = FALSE,
+                    removed_at = CURRENT_TIMESTAMP,
+                    removed_ingestion_run_id = %s
+                WHERE source = %s AND match_id = %s AND is_active
+                """,
+                parameters,
             )
 
     def create_ingestion_run(
@@ -102,13 +200,22 @@ class PostgresDataWriter:
         competition_id: int,
         season_id: int,
         manifest_path: str,
+        discovered_matches: int = 0,
+        new_matches: int = 0,
+        changed_matches: int = 0,
+        skipped_matches: int = 0,
+        removed_matches: int = 0,
     ) -> int:
         row = self.connection.execute(
             """
             INSERT INTO meta.ingestion_runs (
                 dataset_id, source, source_version, competition_id,
-                season_id, status, manifest_path
-            ) VALUES (%s, %s, %s, %s, %s, 'running', %s)
+                season_id, status, manifest_path, discovered_matches,
+                new_matches, changed_matches, skipped_matches, removed_matches
+            ) VALUES (
+                %s, %s, %s, %s, %s, 'running', %s,
+                %s, %s, %s, %s, %s
+            )
             RETURNING id
             """,
             (
@@ -118,6 +225,11 @@ class PostgresDataWriter:
                 competition_id,
                 season_id,
                 manifest_path,
+                discovered_matches,
+                new_matches,
+                changed_matches,
+                skipped_matches,
+                removed_matches,
             ),
         ).fetchone()
         if row is None:
@@ -410,7 +522,10 @@ class PostgresDataWriter:
                 to_period = EXCLUDED.to_period,
                 start_reason = EXCLUDED.start_reason,
                 end_reason = EXCLUDED.end_reason,
-                raw_details = EXCLUDED.raw_details
+                raw_details = EXCLUDED.raw_details,
+                is_active = TRUE,
+                removed_at = NULL,
+                removed_ingestion_run_id = NULL
             """,
             values,
         )
@@ -467,7 +582,10 @@ class PostgresDataWriter:
                 match_id = EXCLUDED.match_id,
                 visible_area = EXCLUDED.visible_area,
                 freeze_frame = EXCLUDED.freeze_frame,
-                raw_details = EXCLUDED.raw_details
+                raw_details = EXCLUDED.raw_details,
+                is_active = TRUE,
+                removed_at = NULL,
+                removed_ingestion_run_id = NULL
             """,
             values,
         )
@@ -509,7 +627,8 @@ class PostgresDataWriter:
         if not match_ids:
             return 0
         row = self.connection.execute(
-            "SELECT COUNT(*) FROM silver.events WHERE match_id = ANY(%s::bigint[])",
+            "SELECT COUNT(*) FROM silver.events "
+            "WHERE is_active AND match_id = ANY(%s::bigint[])",
             (list(match_ids),),
         ).fetchone()
         return int(row[0]) if row else 0
@@ -518,7 +637,8 @@ class PostgresDataWriter:
         if not match_ids:
             return 0
         row = self.connection.execute(
-            "SELECT COUNT(*) FROM silver.event_360 WHERE match_id = ANY(%s::bigint[])",
+            "SELECT COUNT(*) FROM silver.event_360 "
+            "WHERE is_active AND match_id = ANY(%s::bigint[])",
             (list(match_ids),),
         ).fetchone()
         return int(row[0]) if row else 0
@@ -528,7 +648,7 @@ class PostgresDataWriter:
             return 0
         row = self.connection.execute(
             "SELECT COUNT(*) FROM silver.player_match_intervals "
-            "WHERE match_id = ANY(%s::bigint[])",
+            "WHERE is_active AND match_id = ANY(%s::bigint[])",
             (list(match_ids),),
         ).fetchone()
         return int(row[0]) if row else 0

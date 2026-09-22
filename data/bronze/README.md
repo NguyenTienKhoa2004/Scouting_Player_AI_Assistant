@@ -36,5 +36,5 @@ a new dataset-manifest version and rebuild downstream layers.
 Validate Bronze independently of PostgreSQL:
 
 ```powershell
-uv run python -m pitchpulse.corpus.validate_bronze
+uv run python -m pitchpulse.dataset.validate_bronze
 ```

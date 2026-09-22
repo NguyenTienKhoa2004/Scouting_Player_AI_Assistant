@@ -6,7 +6,7 @@ Code được tổ chức theo đúng thứ tự các stage của pipeline:
 Bronze: immutable StatsBomb Open Data JSON
         │
         ▼
-pitchpulse/corpus/
+pitchpulse/dataset/
         └── khóa và kiểm tra tập trận từ manifest
         │
         ▼
@@ -80,7 +80,7 @@ Các entrypoint chạy tuần tự:
 ```text
 pitchpulse.ingestion.run
 pitchpulse.vaep_features.run
-pitchpulse.vaep_features.register_corpus
+pitchpulse.vaep_features.register_dataset
 pitchpulse.model_dataset.run
 pitchpulse.model_training.run
 pitchpulse.model_training.run_test_evaluation

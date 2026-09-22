@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator
 from uuid import UUID
 
-from ..reader import RawDataError, StatsBombRawReader
+from ..reader import RawDataError, RawMatchBundle, StatsBombRawReader
 from .context import RawValidationContext
 from .event_validator import validate_events
 from .lineup_validator import validate_lineups
@@ -21,7 +22,11 @@ class RawStatsBombValidator:
             raise ValueError("max_issues must be positive")
         self.max_issues = max_issues
 
-    def validate(self, reader: StatsBombRawReader) -> RawStatsBombValidationReport:
+    def validate(
+        self,
+        reader: StatsBombRawReader,
+        match_ids: Iterable[int] | None = None,
+    ) -> RawStatsBombValidationReport:
         context = RawValidationContext(self.max_issues)
         match_count = 0
         lineup_count = 0
@@ -31,7 +36,7 @@ class RawStatsBombValidator:
         seen_event_ids: dict[UUID, int] = {}
 
         try:
-            for bundle in reader.iter_match_bundles():
+            for bundle in self._bundles(reader, match_ids):
                 match_count += 1
                 lineup_count += len(bundle.lineups)
                 event_count += len(bundle.events)
@@ -69,5 +74,16 @@ class RawStatsBombValidator:
             deferred_issue_count=context.deferred_issue_count,
             truncated=context.truncated,
         )
+
+    @staticmethod
+    def _bundles(
+        reader: StatsBombRawReader,
+        match_ids: Iterable[int] | None,
+    ) -> Iterator[RawMatchBundle]:
+        if match_ids is None:
+            yield from reader.iter_match_bundles()
+            return
+        for match_id in match_ids:
+            yield reader.read_match_bundle(match_id)
 
 __all__ = ["RawStatsBombValidator"]

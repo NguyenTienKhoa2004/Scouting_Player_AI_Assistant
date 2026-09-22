@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
             else None
         ),
         help=(
-            "Override the real Plan 03 analytics run for this corpus. Normally "
+            "Override the real Plan 03 analytics run for this dataset. Normally "
             "discovered from the registered Plan 03 manifest."
         ),
     )

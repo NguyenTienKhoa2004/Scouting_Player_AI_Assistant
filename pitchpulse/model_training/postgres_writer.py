@@ -172,9 +172,9 @@ class PostgresVaepWriter:
                 "PostgreSQL persistence requires completed player aggregation"
             )
         promotion = manifest.get("production_promotion") or {}
-        if not promotion.get("allowed") or not promotion.get("corpus_adequate"):
+        if not promotion.get("allowed") or not promotion.get("dataset_adequate"):
             raise VaepPersistenceError(
-                "PostgreSQL persistence requires the production corpus gate"
+                "PostgreSQL persistence requires the production dataset gate"
             )
 
         files = {
@@ -242,7 +242,7 @@ class PostgresVaepWriter:
         selected_run_id = override_run_id or next(iter(declared_ids), None)
         if selected_run_id is None or int(selected_run_id) <= 0:
             raise VaepPersistenceError(
-                "Artifact has no analytics_run_id; register the Plan 03 corpus "
+                "Artifact has no analytics_run_id; register the Plan 03 dataset "
                 "or provide its real run with --analytics-run-id"
             )
 

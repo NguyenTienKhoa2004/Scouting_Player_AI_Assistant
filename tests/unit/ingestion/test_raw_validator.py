@@ -96,17 +96,18 @@ class RawStatsBombValidatorTests(unittest.TestCase):
         self.assertEqual(report.deferred_issue_count, 1)
         self.assertEqual(report.blocking_issues, ())
 
-    def test_ingestion_is_blocked_before_database_access(self) -> None:
+    def test_ingestion_is_blocked_before_database_writes(self) -> None:
         self.event["related_events"] = [
             "23b63722-8099-4cdf-818a-d2df3036a633"
         ]
         self._write_events()
 
+        connection = ReadOnlyCheckpointConnection()
         with self.assertRaises(RawStatsBombValidationError) as context:
             ingest_selection(
-                object(),
+                connection,
                 reader=self.reader,
-                dataset_id="test-corpus",
+                dataset_id="test-dataset",
                 source_version="test-version",
                 manifest_path="test-manifest.json",
             )
@@ -114,6 +115,51 @@ class RawStatsBombValidatorTests(unittest.TestCase):
         self.assertIn(
             "related_event_not_found", self._codes(context.exception.report)
         )
+        self.assertEqual(connection.statements, ["checkpoint_select"])
+
+    def test_incremental_validation_only_reads_selected_matches(self) -> None:
+        matches_path = self.data_root / "matches" / "43" / "106.json"
+        matches = json.loads(matches_path.read_text(encoding="utf-8"))
+        second_match = dict(matches[0])
+        second_match["match_id"] = 1002
+        self._write_json(matches_path, [matches[0], second_match])
+        lineups = json.loads(
+            (self.data_root / "lineups" / "1001.json").read_text(encoding="utf-8")
+        )
+        self._write_json(self.data_root / "lineups" / "1002.json", lineups)
+        invalid_event = dict(self.event)
+        invalid_event["id"] = "23b63722-8099-4cdf-818a-d2df3036a633"
+        invalid_event["related_events"] = [
+            "33b63722-8099-4cdf-818a-d2df3036a633"
+        ]
+        self._write_json(
+            self.data_root / "events" / "1002.json",
+            [invalid_event],
+        )
+
+        incremental = RawStatsBombValidator().validate(self.reader, (1001,))
+        complete = RawStatsBombValidator().validate(self.reader)
+
+        self.assertTrue(incremental.is_ingestible)
+        self.assertEqual(incremental.match_count, 1)
+        self.assertFalse(complete.is_ingestible)
+
+    def test_dry_run_plans_without_database_writes(self) -> None:
+        connection = ReadOnlyCheckpointConnection()
+
+        result = ingest_selection(
+            connection,
+            reader=self.reader,
+            dataset_id="test-dataset",
+            source_version="test-version",
+            manifest_path="test-manifest.json",
+            dry_run=True,
+        )
+
+        self.assertTrue(result["dry_run"])
+        self.assertEqual(result["planned_match_count"], 1)
+        self.assertIsNone(result["ingestion_run_id"])
+        self.assertEqual(connection.statements, ["checkpoint_select"])
 
     def _write_fixture(self) -> None:
         self._write_json(
@@ -184,6 +230,25 @@ class RawStatsBombValidatorTests(unittest.TestCase):
     @staticmethod
     def _codes(report: object) -> set[str]:
         return {issue.code for issue in report.issues}  # type: ignore[attr-defined]
+
+
+class FakeResult:
+    def fetchall(self) -> list[tuple[object, ...]]:
+        return []
+
+
+class ReadOnlyCheckpointConnection:
+    def __init__(self) -> None:
+        self.statements: list[str] = []
+
+    def execute(
+        self, sql: str, params: tuple[object, ...] = ()
+    ) -> FakeResult:
+        del params
+        if "FROM meta.ingestion_checkpoints" not in sql:
+            raise AssertionError(f"unexpected database write: {sql}")
+        self.statements.append("checkpoint_select")
+        return FakeResult()
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ can be rebuilt from a pinned source revision.
 
 ## Contract
 
-The training-corpus manifest declares:
+The training-dataset manifest declares:
 
 - a manifest-relative `bronze.data_root`;
 - provider format and immutability policy;
@@ -16,7 +16,7 @@ The training-corpus manifest declares:
 - the pinned StatsBomb Git commit;
 - competition-season match files, expected counts, and SHA-256 hashes.
 
-At load time, `load_training_corpus_manifest` rejects an unsupported contract,
+At load time, `load_training_dataset_manifest` rejects an unsupported contract,
 missing required family, path outside the Bronze root, checksum mismatch,
 missing event/lineup input, duplicate match, or incorrect expected summary.
 `RawStatsBombValidator` then validates the provider records before any

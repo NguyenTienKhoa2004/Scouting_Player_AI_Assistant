@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import time
 from numbers import Real
 from types import MappingProxyType
+from collections.abc import Iterable
 from typing import Any, Mapping
 from uuid import UUID
 
@@ -94,11 +95,20 @@ class EventValidationContext:
     match_player_ids: Mapping[int, frozenset[int]]
 
     @classmethod
-    def from_reader(cls, reader: StatsBombRawReader) -> EventValidationContext:
+    def from_reader(
+        cls,
+        reader: StatsBombRawReader,
+        match_ids: Iterable[int] | None = None,
+    ) -> EventValidationContext:
         match_team_ids: dict[int, frozenset[int]] = {}
         match_player_ids: dict[int, frozenset[int]] = {}
 
-        for match_record in reader.iter_matches():
+        match_records = (
+            reader.iter_matches()
+            if match_ids is None
+            else (reader.read_match(match_id) for match_id in match_ids)
+        )
+        for match_record in match_records:
             match_id = match_record.match_id
             match = match_record.payload
             team_ids = {

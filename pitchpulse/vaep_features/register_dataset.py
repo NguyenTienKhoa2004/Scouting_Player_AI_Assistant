@@ -1,4 +1,4 @@
-"""Register the latest Parquet-first Plan 03 corpus in PostgreSQL."""
+"""Register the latest Parquet-first Plan 03 dataset in PostgreSQL."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ DEFAULT_DATABASE_URL = "postgresql://pitchpulse:1234567@localhost:5433/pitchpuls
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Register a Parquet-first Plan 03 corpus in PostgreSQL"
+        description="Register a Parquet-first Plan 03 dataset in PostgreSQL"
     )
     parser.add_argument(
         "--database-url",

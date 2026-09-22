@@ -49,7 +49,7 @@ class ValidatedFeatureDatasetLoader:
             import pyarrow.parquet as pq
         except ImportError as exc:
             raise RuntimeError(
-                "feature dataset loading requires pyarrow; install requirements.txt"
+                "feature dataset loading requires pyarrow; run `uv sync`"
             ) from exc
 
         directory = Path(feature_dataset_directory).resolve()

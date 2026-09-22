@@ -12,7 +12,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from pitchpulse.pipelines.settings import (  # noqa: E402
-    CORPUS_MANIFEST,
+    DATASET_MANIFEST,
     FEATURE_OUTPUT,
 )
 from pitchpulse.shared.paths import PROJECT_ROOT  # noqa: E402
@@ -22,21 +22,21 @@ STEPS = (
     (
         "Ingesting data",
         "pitchpulse.ingestion.run",
-        ("--corpus-manifest", str(CORPUS_MANIFEST)),
+        ("--dataset-manifest", str(DATASET_MANIFEST)),
     ),
     (
         "Building features",
         "pitchpulse.vaep_features.run",
         (
-            "--corpus-manifest",
-            str(CORPUS_MANIFEST),
+            "--dataset-manifest",
+            str(DATASET_MANIFEST),
             "--output-dir",
             str(FEATURE_OUTPUT),
         ),
     ),
     (
-        "Registering feature corpus",
-        "pitchpulse.vaep_features.register_corpus",
+        "Registering feature dataset",
+        "pitchpulse.vaep_features.register_dataset",
         (),
     ),
     ("Preparing model dataset", "pitchpulse.model_dataset.run", ()),

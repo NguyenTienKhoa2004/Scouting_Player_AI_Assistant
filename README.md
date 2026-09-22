@@ -6,13 +6,6 @@ PitchPulse is an end-to-end football analytics and machine-learning system that 
 
 The repository contains the complete offline data and machine-learning pipeline. It imports and validates football data, creates model features, trains and evaluates models, calculates action and player values, stores the results in PostgreSQL, and verifies that the results can be reproduced.
 
-## Key capabilities
-
-- A validated, versioned Bronze-to-Silver-to-Gold data pipeline for StatsBomb Open Data and optional 360 frames.
-- Deterministic SPADL conversion and leakage-safe point-in-time features built from the current and two previous actions.
-- Calibrated `P_score` and `P_concede` models with chronological match-level splits, logistic baselines, XGBoost training, and frozen-test evaluation.
-- Action and player VAEP metrics, backed by versioned Parquet and PostgreSQL artifacts with lineage and reproducibility checks.
-
 ## System architecture
 
 ```mermaid
@@ -36,9 +29,9 @@ The processing path is deliberately separated from the application layer. `pitch
 
 ## Data engineering
 
-### Source corpus
+### Source dataset
 
-The default corpus is declared in [`configs/datasets/vaep-training-corpus-v1.json`](configs/datasets/vaep-training-corpus-v1.json) and pins StatsBomb Open Data to commit `b0bc9f22dd77c206ddedc1d742893b3bbe64baec`.
+The default dataset is declared in [`configs/datasets/vaep-training-dataset-v1.json`](configs/datasets/vaep-training-dataset-v1.json) and pins StatsBomb Open Data to commit `b0bc9f22dd77c206ddedc1d742893b3bbe64baec`.
 
 | Coverage | Value |
 |---|---:|
@@ -50,11 +43,11 @@ The default corpus is declared in [`configs/datasets/vaep-training-corpus-v1.jso
 | Required inputs | Matches, events, lineups |
 | Optional enrichment | StatsBomb 360 |
 
-The corpus includes Premier League, Ligue 1, La Liga, Serie A, FIFA World Cup, UEFA Euro, African Cup of Nations, and Copa America selections. Provider data stays immutable under `data/bronze/` and is excluded from Git.
+The dataset includes Premier League, Ligue 1, La Liga, Serie A, FIFA World Cup, UEFA Euro, African Cup of Nations, and Copa America selections. Provider data stays immutable under `data/bronze/` and is excluded from Git.
 
 ### Medallion pipeline
 
-**Bronze** is the provider-native boundary. The loader verifies the pinned Git revision, manifest schema, paths, file hashes, declared match counts, required input families, and cross-record relationships before database access.
+**Bronze** stores the original StatsBomb data. Before ingestion, the loader verifies that the local files match the source version and dataset manifest. It then compares per-match fingerprints with checkpoints from earlier dataset versions, so only new or changed matches are processed and removed matches are retired.
 
 **Silver** is the validated PostgreSQL representation. The ingestion service:
 
@@ -131,7 +124,7 @@ Action values are reconciled and then aggregated by player, team, position, acti
 
 ## Verified pipeline output
 
-The checked-in run manifests record the following completed output for the full corpus:
+The checked-in run manifests record the following completed output for the full dataset:
 
 | Artifact | Verified result |
 |---|---:|
@@ -176,7 +169,7 @@ Copy-Item .env.example .env
 ```powershell
 git clone https://github.com/statsbomb/open-data.git data/bronze/statsbomb-open-data
 git -C data/bronze/statsbomb-open-data checkout b0bc9f22dd77c206ddedc1d742893b3bbe64baec
-uv run python -m pitchpulse.corpus.validate_bronze
+uv run python -m pitchpulse.dataset.validate_bronze
 ```
 
 StatsBomb Open Data is subject to its own license and attribution requirements. Keep its `LICENSE.pdf` with the local Bronze copy.
@@ -212,7 +205,7 @@ uv run python -m pitchpulse.pipelines.run_all
 
 This command executes ingestion, SPADL and feature generation, feature registration, label and dataset creation, model training, frozen-test evaluation, action valuation, player aggregation, and PostgreSQL persistence in dependency order.
 
-The full corpus produces large Parquet artifacts and millions of database rows. Feature construction defaults to five matches per batch so it can run on a machine with approximately 8 GB of memory.
+The full dataset produces large Parquet artifacts and millions of database rows. Feature construction defaults to five matches per batch so it can run on a machine with approximately 8 GB of memory.
 
 ## Run individual stages
 
@@ -222,7 +215,7 @@ uv run python -m pitchpulse.ingestion.run
 
 # Silver -> SPADL actions and point-in-time features
 uv run python -m pitchpulse.vaep_features.run
-uv run python -m pitchpulse.vaep_features.register_corpus
+uv run python -m pitchpulse.vaep_features.register_dataset
 
 # Labels, chronological splits, and model dataset
 uv run python -m pitchpulse.model_dataset.run
@@ -267,14 +260,14 @@ The suite covers raw and canonical validation, idempotent ingestion, SPADL conve
 
 ```text
 apps/                         API and dashboard application boundaries
-configs/datasets/             Versioned corpus manifests
+configs/datasets/             Versioned dataset manifests
 configs/models/               Model evaluation policies
 data/bronze/                  Immutable provider data; ignored by Git
 docs/architecture/            Data-layer and system architecture
 docs/data_dictionary/         StatsBomb-to-canonical field definitions
 infra/db/migrations/          PostgreSQL migrations and rollbacks
 infra/pgadmin/                Local pgAdmin configuration
-pitchpulse/corpus/             Corpus loading and source validation
+pitchpulse/dataset/            Dataset loading and source validation
 pitchpulse/ingestion/          Raw validation, normalization, and Silver writes
 pitchpulse/spadl/              Canonical event-to-action conversion
 pitchpulse/vaep_features/      Action states, features, artifacts, and registration

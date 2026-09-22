@@ -19,11 +19,11 @@ class MatchSource:
     events_path: Path
 
 
-class CorpusMatchReader:
-    """Resolve match metadata, lineup JSON, and event JSON from the corpus pin."""
+class DatasetMatchReader:
+    """Resolve match metadata, lineup JSON, and event JSON from the dataset pin."""
 
-    def __init__(self, corpus_manifest_path: Path) -> None:
-        self.manifest_path = Path(corpus_manifest_path).resolve()
+    def __init__(self, dataset_manifest_path: Path) -> None:
+        self.manifest_path = Path(dataset_manifest_path).resolve()
         self.manifest = read_json(self.manifest_path)
         self.data_root = self._data_root()
         self.matches = self._index_matches()
@@ -33,7 +33,7 @@ class CorpusMatchReader:
             context = self.matches[match_id]
         except KeyError as exc:
             raise PlayerAggregationError(
-                f"Match {match_id} is absent from the pinned corpus"
+                f"Match {match_id} is absent from the pinned dataset"
             ) from exc
         return MatchSource(
             context=context,
@@ -56,39 +56,39 @@ class CorpusMatchReader:
     def _data_root(self) -> Path:
         bronze = self.manifest.get("bronze")
         if not isinstance(bronze, Mapping):
-            raise PlayerAggregationError("Corpus manifest lacks the bronze contract")
+            raise PlayerAggregationError("Dataset manifest lacks the bronze contract")
         value = bronze.get("data_root")
         if not isinstance(value, str) or not value:
-            raise PlayerAggregationError("Corpus manifest lacks bronze.data_root")
+            raise PlayerAggregationError("Dataset manifest lacks bronze.data_root")
         path = Path(value)
         if not path.is_absolute():
             path = self.manifest_path.parent / path
         path = path.resolve()
         if not path.is_dir():
-            raise PlayerAggregationError(f"Corpus data root does not exist: {path}")
+            raise PlayerAggregationError(f"Dataset data root does not exist: {path}")
         return path
 
     def _index_matches(self) -> dict[int, MatchContext]:
         selections = self.manifest.get("selections")
         if not isinstance(selections, list) or not selections:
-            raise PlayerAggregationError("Corpus manifest has no selections")
+            raise PlayerAggregationError("Dataset manifest has no selections")
         result: dict[int, MatchContext] = {}
         for selection in selections:
             if not isinstance(selection, Mapping):
-                raise PlayerAggregationError("Corpus selection must be an object")
+                raise PlayerAggregationError("Dataset selection must be an object")
             competition_id = _positive_id(
                 selection.get("competition_id"), "competition_id"
             )
             season_id = _positive_id(selection.get("season_id"), "season_id")
             relative_path = selection.get("matches_path")
             if not isinstance(relative_path, str) or not relative_path:
-                raise PlayerAggregationError("Corpus selection lacks matches_path")
+                raise PlayerAggregationError("Dataset selection lacks matches_path")
             for match in self.read_array(self.data_root / relative_path):
                 match_id = _positive_id(match.get("match_id"), "match_id")
                 context = MatchContext(match_id, competition_id, season_id)
                 if match_id in result:
                     raise PlayerAggregationError(
-                        f"Duplicate match {match_id} in corpus selections"
+                        f"Duplicate match {match_id} in dataset selections"
                     )
                 result[match_id] = context
         return result
@@ -145,4 +145,4 @@ def _positive_id(value: Any, name: str) -> int:
     return value
 
 
-__all__ = ["ActionTypeReader", "CorpusMatchReader", "MatchSource"]
+__all__ = ["ActionTypeReader", "DatasetMatchReader", "MatchSource"]

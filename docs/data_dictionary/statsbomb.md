@@ -2,7 +2,7 @@
 
 ## Scope
 
-This mapping applies to the StatsBomb inputs pinned by [`configs/datasets/vaep-training-corpus-v1.json`](../../configs/datasets/vaep-training-corpus-v1.json). The verified World Cup 2022 fixture profile is retained in [`artifacts/reports/statsbomb-world-cup-2022-profile.json`](../../artifacts/reports/statsbomb-world-cup-2022-profile.json).
+This mapping applies to the StatsBomb inputs pinned by [`configs/datasets/vaep-training-dataset-v1.json`](../../configs/datasets/vaep-training-dataset-v1.json). The verified World Cup 2022 fixture profile is retained in [`artifacts/reports/statsbomb-world-cup-2022-profile.json`](../../artifacts/reports/statsbomb-world-cup-2022-profile.json).
 
 One StatsBomb event object becomes one canonical row in `silver.events`. The source JSON files remain immutable.
 

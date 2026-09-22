@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from pitchpulse.corpus.training_dataset_validator import (
-    load_training_corpus_manifest,
-    single_file_training_corpus,
+from pitchpulse.dataset.training_dataset_validator import (
+    load_training_dataset_manifest,
+    single_file_training_dataset,
 )
 from pitchpulse.shared.file_io import file_sha256, read_json, write_json
 from .splits import (
@@ -32,7 +32,7 @@ class ChunkedSplitArtifactWriter:
         self,
         label_directory: Path,
         *,
-        corpus_manifest_path: Path | None = None,
+        dataset_manifest_path: Path | None = None,
         match_metadata_path: Path | None = None,
         progress: Any | None = None,
     ) -> SplitArtifactPaths:
@@ -41,17 +41,17 @@ class ChunkedSplitArtifactWriter:
             import pyarrow.parquet as pq
         except ImportError as exc:
             raise RuntimeError(
-                "VAEP split generation requires pyarrow; install requirements.txt"
+                "VAEP split generation requires pyarrow; run `uv sync`"
             ) from exc
 
-        if (corpus_manifest_path is None) == (match_metadata_path is None):
+        if (dataset_manifest_path is None) == (match_metadata_path is None):
             raise ValueError(
-                "provide exactly one of corpus_manifest_path or match_metadata_path"
+                "provide exactly one of dataset_manifest_path or match_metadata_path"
             )
-        corpus = (
-            load_training_corpus_manifest(corpus_manifest_path)
-            if corpus_manifest_path is not None
-            else single_file_training_corpus(match_metadata_path)
+        dataset = (
+            load_training_dataset_manifest(dataset_manifest_path)
+            if dataset_manifest_path is not None
+            else single_file_training_dataset(match_metadata_path)
         )
         directory = Path(label_directory).resolve()
         label_manifest = read_json(directory / "label_manifest.json")
@@ -64,7 +64,7 @@ class ChunkedSplitArtifactWriter:
         if label_manifest.get("target_policy_version") != TARGET_POLICY_VERSION:
             raise ValueError("label artifact uses an unexpected target policy")
 
-        match_ids = sorted(corpus.match_ids)
+        match_ids = sorted(dataset.match_ids)
         action_stub = pa.table(
             {
                 "match_id": pa.array(match_ids, type=pa.int64()),
@@ -73,12 +73,12 @@ class ChunkedSplitArtifactWriter:
         )
         split_dataset = ChronologicalMatchSplitter().build(
             action_stub,
-            corpus.matches,
+            dataset.matches,
             dataset_fingerprint=str(
                 label_manifest["source_dataset_fingerprint"]
             ),
             target_policy_version=TARGET_POLICY_VERSION,
-            match_metadata_sha256=corpus.metadata_fingerprint,
+            match_metadata_sha256=dataset.metadata_fingerprint,
         )
         assignments = split_dataset.assignments
         manifest = split_dataset.manifest
@@ -111,7 +111,7 @@ class ChunkedSplitArtifactWriter:
                 frame = table.to_pandas()
                 frame["split"] = frame["match_id"].map(split_by_match)
                 if frame["split"].isna().any():
-                    raise ValueError("labels contain matches outside the selected corpus")
+                    raise ValueError("labels contain matches outside the selected dataset")
                 seen_match_ids.update(
                     int(value) for value in frame["match_id"].unique()
                 )
@@ -137,7 +137,7 @@ class ChunkedSplitArtifactWriter:
             parquet_file.close()
 
         if seen_match_ids != set(match_ids):
-            raise ValueError("label match IDs do not exactly match the corpus")
+            raise ValueError("label match IDs do not exactly match the dataset")
         if action_count != int(label_manifest["action_count"]):
             raise ValueError("split action count does not match the label manifest")
 

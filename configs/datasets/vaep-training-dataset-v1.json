@@ -1,7 +1,7 @@
 {
-  "schema_version": 2,
-  "corpus_id": "statsbomb-open-data-male-multicompetition-v1",
-  "description": "Pinned male-event corpus for production VAEP evaluation",
+  "schema_version": 3,
+  "dataset_id": "statsbomb-open-data-male-multicompetition-v1",
+  "description": "Pinned male-event dataset for production VAEP evaluation",
   "source": {
     "name": "StatsBomb Open Data",
     "repository": "https://github.com/statsbomb/open-data",
@@ -29,7 +29,7 @@
     "minimum_competition_seasons": 6,
     "minimum_matches_per_split": 75,
     "minimum_positive_labels_per_target_per_split": 250,
-    "require_complete_declared_corpus": true
+    "require_complete_declared_dataset": true
   },
   "expected_summary": {
     "match_count": 1831,

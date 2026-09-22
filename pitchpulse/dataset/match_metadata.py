@@ -1,4 +1,4 @@
-"""Minimal match metadata contract shared by corpus selection and splitting."""
+"""Minimal match metadata contract shared by dataset selection and splitting."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 # Database migrations
 
-## Apply migrations 001 through 007
+## Apply migrations 001 through 010
 
 Start PostgreSQL:
 
@@ -31,6 +31,15 @@ Get-Content -Raw infra/db/migrations/006_vaep_modeling.up.sql |
 
 Get-Content -Raw infra/db/migrations/007_spadl_table_names.up.sql |
   docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U pitchpulse -d pitchpulse
+
+Get-Content -Raw infra/db/migrations/008_ingestion_checkpoints.up.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U pitchpulse -d pitchpulse
+
+Get-Content -Raw infra/db/migrations/009_silver_snapshot_reconciliation.up.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U pitchpulse -d pitchpulse
+
+Get-Content -Raw infra/db/migrations/010_ingestion_match_metrics.up.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U pitchpulse -d pitchpulse
 ```
 
 Migration `002` preserves existing event rows and adds VAEP-ready event fields,
@@ -53,6 +62,39 @@ values, and player aggregate serving tables. It does not rebuild Plan 03 data.
 Migration `007` renames the generic Gold action tables to the explicit
 `gold.spadl_actions` and `gold.spadl_action_features` names. PostgreSQL keeps
 their rows and foreign keys intact.
+
+Migration `008` adds per-match Bronze content checkpoints used to plan
+incremental ingestion without relying on filesystem timestamps. A checkpoint
+is keyed by source and match, allowing it to be reused when a new versioned
+dataset manifest points to a newer source revision.
+
+Migration `009` adds active/removal lineage to match-scoped Silver records so
+changed source snapshots can retire missing rows without breaking historical
+Gold foreign keys.
+
+Migration `010` records discovered, new, changed, skipped, and removed match
+counts on every ingestion run.
+
+## Roll back migration 010
+
+```powershell
+Get-Content -Raw infra/db/migrations/010_ingestion_match_metrics.down.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U pitchpulse -d pitchpulse
+```
+
+## Roll back migration 009
+
+```powershell
+Get-Content -Raw infra/db/migrations/009_silver_snapshot_reconciliation.down.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U pitchpulse -d pitchpulse
+```
+
+## Roll back migration 008
+
+```powershell
+Get-Content -Raw infra/db/migrations/008_ingestion_checkpoints.down.sql |
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U pitchpulse -d pitchpulse
+```
 
 ## Roll back migration 007
 

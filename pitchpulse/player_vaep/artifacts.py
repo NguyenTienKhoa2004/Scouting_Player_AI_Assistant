@@ -23,7 +23,7 @@ from .calculations import (
     calculate_player_minutes,
     match_duration_seconds,
 )
-from .sources import ActionTypeReader, CorpusMatchReader
+from .sources import ActionTypeReader, DatasetMatchReader
 
 
 PLAYER_VAEP_FILENAME = "player_vaep.parquet"
@@ -44,7 +44,7 @@ class PlayerAggregationWriter:
     def write(
         self,
         artifact_directory: Path,
-        corpus_manifest_path: Path,
+        dataset_manifest_path: Path,
         *,
         minimum_minutes: float = 450.0,
         progress: Any | None = None,
@@ -79,7 +79,7 @@ class PlayerAggregationWriter:
         )
         action_values_manifest = read_json(action_values_manifest_path)
         actions_path = self._verified_actions_path(action_values_manifest)
-        corpus = CorpusMatchReader(corpus_manifest_path)
+        dataset = DatasetMatchReader(dataset_manifest_path)
         action_types = ActionTypeReader(actions_path)
         aggregator = PlayerVaepAggregator(minimum_minutes=minimum_minutes)
 
@@ -113,9 +113,9 @@ class PlayerAggregationWriter:
             typed_values = self._attach_action_types(
                 values, action_types.read_match(match_id)
             )
-            source = corpus.source(match_id)
-            events = corpus.read_array(source.events_path)
-            lineups = corpus.read_array(source.lineup_path)
+            source = dataset.source(match_id)
+            events = dataset.read_array(source.events_path)
+            lineups = dataset.read_array(source.lineup_path)
             duration = match_duration_seconds(events)
             minutes = calculate_player_minutes(lineups, duration)
             aggregator.add_match(typed_values, source.context, minutes)
@@ -137,7 +137,7 @@ class PlayerAggregationWriter:
                 action_values_manifest=action_values_manifest,
                 action_values_path=action_values_path,
                 actions_path=actions_path,
-                corpus_manifest_path=Path(corpus_manifest_path).resolve(),
+                dataset_manifest_path=Path(dataset_manifest_path).resolve(),
                 paths=paths,
                 rows=rows,
                 match_count=len(seen_matches),
@@ -260,7 +260,7 @@ class PlayerAggregationWriter:
         action_values_manifest: Mapping[str, Any],
         action_values_path: Path,
         actions_path: Path,
-        corpus_manifest_path: Path,
+        dataset_manifest_path: Path,
         paths: PlayerAggregationPaths,
         rows: list[dict[str, Any]],
         match_count: int,
@@ -323,9 +323,9 @@ class PlayerAggregationWriter:
                     "path": str(actions_path),
                     "sha256": file_sha256(actions_path),
                 },
-                "corpus_manifest": {
-                    "path": str(corpus_manifest_path),
-                    "sha256": file_sha256(corpus_manifest_path),
+                "dataset_manifest": {
+                    "path": str(dataset_manifest_path),
+                    "sha256": file_sha256(dataset_manifest_path),
                 },
             },
             "files": {paths.player_vaep.name: file_sha256(paths.player_vaep)},

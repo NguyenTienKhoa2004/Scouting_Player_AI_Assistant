@@ -18,9 +18,9 @@ from pitchpulse.vaep_features.feature_dataset_loader import (
     FeatureDataset,
     FeatureDatasetLineage,
 )
-from pitchpulse.corpus.training_dataset_validator import (
-    load_training_corpus_manifest,
-    single_file_training_corpus,
+from pitchpulse.dataset.training_dataset_validator import (
+    load_training_dataset_manifest,
+    single_file_training_dataset,
 )
 from .feature_allowlist import (
     FEATURE_ALLOWLIST_FILENAME,
@@ -32,7 +32,7 @@ from .training_manifest import (
     PREPARATION_VERSION,
     TRAINING_MANIFEST_FILENAME,
     build_preparation_training_manifest,
-    require_training_corpus_ready,
+    require_training_dataset_ready,
 )
 
 
@@ -43,14 +43,14 @@ class FinalizedPreparationPaths:
 
 
 class ChunkedPreparationFinalizer:
-    """Run the corpus gate and write the preparation training manifest."""
+    """Run the dataset gate and write the preparation training manifest."""
 
     def write(
         self,
         feature_artifact_directory: Path,
         label_directory: Path,
         *,
-        corpus_manifest_path: Path | None = None,
+        dataset_manifest_path: Path | None = None,
         match_metadata_path: Path | None = None,
         progress: Any | None = None,
     ) -> FinalizedPreparationPaths:
@@ -58,17 +58,17 @@ class ChunkedPreparationFinalizer:
             import pyarrow.parquet as pq
         except ImportError as exc:
             raise RuntimeError(
-                "preparation finalization requires pyarrow; install requirements.txt"
+                "preparation finalization requires pyarrow; run `uv sync`"
             ) from exc
 
-        if (corpus_manifest_path is None) == (match_metadata_path is None):
+        if (dataset_manifest_path is None) == (match_metadata_path is None):
             raise ValueError(
-                "provide exactly one of corpus_manifest_path or match_metadata_path"
+                "provide exactly one of dataset_manifest_path or match_metadata_path"
             )
-        corpus = (
-            load_training_corpus_manifest(corpus_manifest_path)
-            if corpus_manifest_path is not None
-            else single_file_training_corpus(match_metadata_path)
+        dataset = (
+            load_training_dataset_manifest(dataset_manifest_path)
+            if dataset_manifest_path is not None
+            else single_file_training_dataset(match_metadata_path)
         )
         feature_artifact_directory = Path(feature_artifact_directory).resolve()
         directory = Path(label_directory).resolve()
@@ -140,7 +140,7 @@ class ChunkedPreparationFinalizer:
         )
         materialized_ids = set(assignments["match_id"].to_pylist())
         if progress is not None:
-            progress("running corpus adequacy gate")
+            progress("running dataset adequacy gate")
         enriched_split = dict(split_manifest)
         enriched_split.update(
             {
@@ -152,7 +152,7 @@ class ChunkedPreparationFinalizer:
                 ),
             }
         )
-        corpus_assessment = corpus.assess(materialized_ids, enriched_split)
+        dataset_assessment = dataset.assess(materialized_ids, enriched_split)
         source_artifacts = FeatureDataset(
             directory=feature_artifact_directory,
             actions=None,
@@ -171,7 +171,7 @@ class ChunkedPreparationFinalizer:
         )
         training_manifest = build_preparation_training_manifest(
             source_artifacts=source_artifacts,
-            corpus_assessment=corpus_assessment,
+            dataset_assessment=dataset_assessment,
             split_manifest=enriched_split,
             feature_allowlist_manifest=allowlist_manifest,
             artifacts={
@@ -181,7 +181,7 @@ class ChunkedPreparationFinalizer:
         )
         target = directory / TRAINING_MANIFEST_FILENAME
         write_json(target, training_manifest)
-        require_training_corpus_ready(training_manifest)
+        require_training_dataset_ready(training_manifest)
         if progress is not None:
             progress(f"completed training manifest: {target}")
         return FinalizedPreparationPaths(directory=directory, training_manifest=target)

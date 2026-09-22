@@ -1,4 +1,4 @@
-"""Pinned training-corpus selection and validation."""
+"""Pinned training-dataset selection and validation."""
 
 from .bronze import (
     BronzeSourceError,
@@ -12,28 +12,28 @@ from .match_metadata import (
 )
 from .training_dataset_validator import (
     DEFAULT_ADEQUACY_POLICY,
-    TRAINING_CORPUS_SCHEMA_VERSION,
+    TRAINING_DATASET_SCHEMA_VERSION,
     BronzeContract,
-    CorpusSelection,
-    TrainingCorpus,
-    TrainingCorpusError,
-    load_training_corpus_manifest,
-    single_file_training_corpus,
+    DatasetSelection,
+    TrainingDataset,
+    TrainingDatasetError,
+    load_training_dataset_manifest,
+    single_file_training_dataset,
 )
 
 __all__ = [
     "BronzeContract",
     "BronzeSourceError",
     "BronzeSourceReport",
-    "CorpusSelection",
+    "DatasetSelection",
     "DEFAULT_ADEQUACY_POLICY",
     "MatchMetadata",
     "MatchMetadataError",
-    "TRAINING_CORPUS_SCHEMA_VERSION",
-    "TrainingCorpus",
-    "TrainingCorpusError",
+    "TRAINING_DATASET_SCHEMA_VERSION",
+    "TrainingDataset",
+    "TrainingDatasetError",
     "load_statsbomb_match_metadata",
-    "load_training_corpus_manifest",
-    "single_file_training_corpus",
+    "load_training_dataset_manifest",
+    "single_file_training_dataset",
     "validate_bronze_repository",
 ]

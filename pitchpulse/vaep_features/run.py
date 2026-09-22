@@ -1,4 +1,4 @@
-"""Build a versioned SPADL and VAEP feature corpus from PostgreSQL events."""
+"""Build a versioned SPADL and VAEP feature dataset from PostgreSQL events."""
 
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from pitchpulse.pipelines.settings import (  # noqa: E402
-    CORPUS_MANIFEST,
+    DATASET_MANIFEST,
     FEATURE_OUTPUT,
 )
 from pitchpulse.vaep_features import AnalyticsDatasetBuilder  # noqa: E402
-from pitchpulse.corpus.training_dataset_validator import (  # noqa: E402
-    load_training_corpus_manifest,
+from pitchpulse.dataset.training_dataset_validator import (  # noqa: E402
+    load_training_dataset_manifest,
 )
 from pitchpulse.vaep_features.artifacts import ParquetArtifactWriter  # noqa: E402
 from pitchpulse.spadl.input_reader import (  # noqa: E402
@@ -39,10 +39,10 @@ def parse_args() -> argparse.Namespace:
         default=os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL),
     )
     parser.add_argument(
-        "--corpus-manifest",
+        "--dataset-manifest",
         type=Path,
-        default=CORPUS_MANIFEST,
-        help="Versioned training corpus manifest to build.",
+        default=DATASET_MANIFEST,
+        help="Versioned training dataset manifest to build.",
     )
     parser.add_argument(
         "--include-360",
@@ -59,14 +59,14 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=5,
         help=(
-            "Matches held in memory per batch for corpus builds (default: 5, "
+            "Matches held in memory per batch for dataset builds (default: 5, "
             "safe for an 8 GB machine)."
         ),
     )
     return parser.parse_args()
 
 
-def build_corpus(
+def build_dataset(
     args: argparse.Namespace, match_ids: list[int]
 ) -> tuple[object, dict[str, object]]:
     total_batches = (len(match_ids) + args.batch_size - 1) // args.batch_size
@@ -102,9 +102,9 @@ def main() -> None:
     args = parse_args()
     if args.batch_size <= 0:
         raise ValueError("--batch-size must be a positive integer")
-    corpus = load_training_corpus_manifest(args.corpus_manifest)
-    match_ids = sorted(corpus.match_ids)
-    artifacts, quality_report = build_corpus(args, match_ids)
+    dataset = load_training_dataset_manifest(args.dataset_manifest)
+    match_ids = sorted(dataset.match_ids)
+    artifacts, quality_report = build_dataset(args, match_ids)
 
     print(
         json.dumps(

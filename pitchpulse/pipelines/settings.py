@@ -5,8 +5,8 @@ from pathlib import Path
 from pitchpulse.shared.paths import PROJECT_ROOT
 
 
-CORPUS_MANIFEST = (
-    PROJECT_ROOT / "configs" / "datasets" / "vaep-training-corpus-v1.json"
+DATASET_MANIFEST = (
+    PROJECT_ROOT / "configs" / "datasets" / "vaep-training-dataset-v1.json"
 )
 FEATURE_OUTPUT = PROJECT_ROOT / "artifacts" / "features" / "plan03"
 MODEL_OUTPUT = PROJECT_ROOT / "artifacts" / "models" / "plan04"

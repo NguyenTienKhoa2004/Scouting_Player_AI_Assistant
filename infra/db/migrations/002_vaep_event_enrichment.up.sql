@@ -68,7 +68,7 @@ CREATE UNIQUE INDEX events_source_match_order_unique
     ON events (source, match_id, source_event_index)
     WHERE source_event_index IS NOT NULL;
 
--- Supports full-corpus SPADL reads without a multi-gigabyte external sort.
+-- Supports full-dataset SPADL reads without a multi-gigabyte external sort.
 CREATE INDEX events_match_source_event_idx
     ON events (match_id, source_event_index);
 

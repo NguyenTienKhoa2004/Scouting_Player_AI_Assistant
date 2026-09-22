@@ -14,6 +14,7 @@ from pitchpulse.ingestion import (  # noqa: E402
     RawDataFileNotFoundError,
     RawDataFormatError,
     StatsBombRawReader,
+    fingerprint_match_bundle,
 )
 
 
@@ -76,6 +77,24 @@ class StatsBombRawReaderTests(unittest.TestCase):
     def test_iter_events_uses_selected_match_ids(self) -> None:
         records = list(self.reader.iter_events([1001]))
         self.assertEqual([record.payload["id"] for record in records], ["event-1"])
+
+    def test_adding_another_match_does_not_change_existing_match_hash(self) -> None:
+        original_hash = fingerprint_match_bundle(
+            self.reader.read_match_bundle(1001)
+        ).content_hash
+        self._write_json(
+            self.data_root / "matches" / "43" / "106.json",
+            [
+                {"match_id": 1001, "home_team": {}, "away_team": {}},
+                {"match_id": 1002, "home_team": {}, "away_team": {}},
+            ],
+        )
+
+        updated_hash = fingerprint_match_bundle(
+            self.reader.read_match_bundle(1001)
+        ).content_hash
+
+        self.assertEqual(original_hash, updated_hash)
 
     def test_missing_event_file_has_contextual_error(self) -> None:
         with self.assertRaisesRegex(RawDataFileNotFoundError, "1002.json"):

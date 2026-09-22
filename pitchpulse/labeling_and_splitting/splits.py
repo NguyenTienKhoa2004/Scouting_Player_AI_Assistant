@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Iterable
 
-from pitchpulse.corpus.match_metadata import MatchMetadata
+from pitchpulse.dataset.match_metadata import MatchMetadata
 
 
 SPLIT_VERSION = "chronological-match-70-15-15-v1"
@@ -42,7 +42,7 @@ class ChronologicalMatchSplitter:
             import pyarrow as pa
         except ImportError as exc:
             raise RuntimeError(
-                "match splitting requires pyarrow; install requirements.txt"
+                "match splitting requires pyarrow; run `uv sync`"
             ) from exc
 
         if not {"match_id", "action_id"}.issubset(actions.column_names):

@@ -22,7 +22,7 @@ from pitchpulse.model_dataset.finalize import (  # noqa: E402
     ChunkedPreparationFinalizer,
 )
 from pitchpulse.pipelines.settings import (  # noqa: E402
-    CORPUS_MANIFEST,
+    DATASET_MANIFEST,
     FEATURE_OUTPUT,
     MODEL_OUTPUT,
     latest_artifact,
@@ -36,13 +36,13 @@ def main() -> None:
     feature_directory = latest_artifact(FEATURE_OUTPUT, "manifest.json")
     labels = ChunkedTargetLabelWriter().write(
         feature_directory,
-        corpus_manifest_path=CORPUS_MANIFEST,
+        dataset_manifest_path=DATASET_MANIFEST,
         output_root=MODEL_OUTPUT,
         progress=progress,
     )
     ChunkedSplitArtifactWriter().write(
         labels.directory,
-        corpus_manifest_path=CORPUS_MANIFEST,
+        dataset_manifest_path=DATASET_MANIFEST,
         progress=progress,
     )
     ChunkedModelDatasetWriter().write(
@@ -53,7 +53,7 @@ def main() -> None:
     result = ChunkedPreparationFinalizer().write(
         feature_directory,
         labels.directory,
-        corpus_manifest_path=CORPUS_MANIFEST,
+        dataset_manifest_path=DATASET_MANIFEST,
         progress=progress,
     )
     print(f"Model dataset: {result.directory}", flush=True)

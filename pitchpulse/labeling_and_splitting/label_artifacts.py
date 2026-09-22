@@ -16,9 +16,9 @@ from pitchpulse.spadl.converter import (
 from pitchpulse.vaep_features.feature_builder import BASE_FEATURE_VERSION
 from pitchpulse.shared.file_io import file_sha256, read_json, write_json
 
-from pitchpulse.corpus.training_dataset_validator import (
-    load_training_corpus_manifest,
-    single_file_training_corpus,
+from pitchpulse.dataset.training_dataset_validator import (
+    load_training_dataset_manifest,
+    single_file_training_dataset,
 )
 from .target_audit import merge_target_audits
 from .targets import TARGET_POLICY_VERSION, TargetLabelBuilder, baseline_target_policy
@@ -43,7 +43,7 @@ class ChunkedTargetLabelWriter:
         self,
         feature_artifact_directory: Path,
         *,
-        corpus_manifest_path: Path | None = None,
+        dataset_manifest_path: Path | None = None,
         match_metadata_path: Path | None = None,
         output_root: Path,
         progress: Callable[[str], None] | None = None,
@@ -52,17 +52,17 @@ class ChunkedTargetLabelWriter:
             import pyarrow.parquet as pq
         except ImportError as exc:
             raise RuntimeError(
-                "VAEP label generation requires pyarrow; install requirements.txt"
+                "VAEP label generation requires pyarrow; run `uv sync`"
             ) from exc
 
-        if (corpus_manifest_path is None) == (match_metadata_path is None):
+        if (dataset_manifest_path is None) == (match_metadata_path is None):
             raise ValueError(
-                "provide exactly one of corpus_manifest_path or match_metadata_path"
+                "provide exactly one of dataset_manifest_path or match_metadata_path"
             )
-        corpus = (
-            load_training_corpus_manifest(corpus_manifest_path)
-            if corpus_manifest_path is not None
-            else single_file_training_corpus(match_metadata_path)
+        dataset = (
+            load_training_dataset_manifest(dataset_manifest_path)
+            if dataset_manifest_path is not None
+            else single_file_training_dataset(match_metadata_path)
         )
         directory = Path(feature_artifact_directory).resolve()
         manifest = read_json(directory / "manifest.json")
@@ -100,7 +100,7 @@ class ChunkedTargetLabelWriter:
         digest.update(ACTION_MAPPING_VERSION.encode())
         digest.update(BASE_FEATURE_VERSION.encode())
         digest.update(str(quality["event_count"]).encode())
-        expected_match_ids = set(corpus.match_ids)
+        expected_match_ids = set(dataset.match_ids)
         seen_match_ids: set[int] = set()
         audits: list[dict[str, Any]] = []
         label_writer = None
@@ -110,7 +110,7 @@ class ChunkedTargetLabelWriter:
                 "competition_id": match.competition_id,
                 "season_id": match.season_id,
             }
-            for match in corpus.matches
+            for match in dataset.matches
         }
 
         try:
@@ -155,7 +155,7 @@ class ChunkedTargetLabelWriter:
                 raise ValueError("feature artifact dataset fingerprint does not reconcile")
             if seen_match_ids != expected_match_ids:
                 raise ValueError(
-                    "feature artifact match IDs do not exactly match the selected corpus"
+                    "feature artifact match IDs do not exactly match the selected dataset"
                 )
             if label_count != int(quality["action_count"]):
                 raise ValueError(

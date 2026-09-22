@@ -12,65 +12,65 @@ from unittest.mock import patch
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from pitchpulse.corpus.training_dataset_validator import (  # noqa: E402
-    TRAINING_CORPUS_SCHEMA_VERSION,
-    TrainingCorpusError,
-    load_training_corpus_manifest,
+from pitchpulse.dataset.training_dataset_validator import (  # noqa: E402
+    TRAINING_DATASET_SCHEMA_VERSION,
+    TrainingDatasetError,
+    load_training_dataset_manifest,
 )
-from pitchpulse.corpus.bronze import (  # noqa: E402
+from pitchpulse.dataset.bronze import (  # noqa: E402
     BronzeSourceError,
     validate_bronze_repository,
 )
 from pitchpulse.model_dataset.training_manifest import (  # noqa: E402
-    TrainingCorpusNotReady,
-    require_training_corpus_ready,
+    TrainingDatasetNotReady,
+    require_training_dataset_ready,
 )
 
 
-CORPUS_MANIFEST = (
-    PROJECT_ROOT / "configs" / "datasets" / "vaep-training-corpus-v1.json"
+DATASET_MANIFEST = (
+    PROJECT_ROOT / "configs" / "datasets" / "vaep-training-dataset-v1.json"
 )
 
 
 class TrainingDatasetValidatorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.corpus = load_training_corpus_manifest(CORPUS_MANIFEST)
+        cls.dataset = load_training_dataset_manifest(DATASET_MANIFEST)
 
-    def test_pinned_corpus_reconciles_with_local_statsbomb_data(self) -> None:
+    def test_pinned_dataset_reconciles_with_local_statsbomb_data(self) -> None:
         self.assertEqual(
-            self.corpus.corpus_id,
+            self.dataset.dataset_id,
             "statsbomb-open-data-male-multicompetition-v1",
         )
-        self.assertEqual(len(self.corpus.matches), 1831)
-        self.assertEqual(len(self.corpus.match_ids), 1831)
-        self.assertEqual(len(self.corpus.selections), 10)
-        self.assertEqual(self.corpus.scope["competition_gender"], "male")
-        self.assertFalse(self.corpus.scope["three_sixty_required"])
+        self.assertEqual(len(self.dataset.matches), 1831)
+        self.assertEqual(len(self.dataset.match_ids), 1831)
+        self.assertEqual(len(self.dataset.selections), 10)
+        self.assertEqual(self.dataset.scope["competition_gender"], "male")
+        self.assertFalse(self.dataset.scope["three_sixty_required"])
         self.assertEqual(
-            len({match.competition_id for match in self.corpus.matches}), 8
+            len({match.competition_id for match in self.dataset.matches}), 8
         )
-        self.assertEqual(TRAINING_CORPUS_SCHEMA_VERSION, 2)
-        self.assertIsNotNone(self.corpus.bronze)
-        assert self.corpus.bronze is not None
-        self.assertEqual(self.corpus.bronze.source_format, "statsbomb-open-data-json")
-        self.assertTrue(self.corpus.bronze.immutable)
+        self.assertEqual(TRAINING_DATASET_SCHEMA_VERSION, 3)
+        self.assertIsNotNone(self.dataset.bronze)
+        assert self.dataset.bronze is not None
+        self.assertEqual(self.dataset.bronze.source_format, "statsbomb-open-data-json")
+        self.assertTrue(self.dataset.bronze.immutable)
         self.assertEqual(
-            self.corpus.bronze.data_root,
+            self.dataset.bronze.data_root,
             PROJECT_ROOT / "data" / "bronze" / "statsbomb-open-data" / "data",
         )
         self.assertTrue(
             all(
-                selection.data_root == self.corpus.bronze.data_root
-                for selection in self.corpus.selections
+                selection.data_root == self.dataset.bronze.data_root
+                for selection in self.dataset.selections
             )
         )
 
     def test_bronze_repository_matches_pinned_source_commit(self) -> None:
-        assert self.corpus.bronze is not None
+        assert self.dataset.bronze is not None
         report = validate_bronze_repository(
-            self.corpus.bronze.data_root,
-            str(self.corpus.source["git_commit"]),
+            self.dataset.bronze.data_root,
+            str(self.dataset.source["git_commit"]),
         )
 
         self.assertTrue(report.tracked_tree_clean)
@@ -79,7 +79,7 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
     def test_bronze_repository_rejects_wrong_commit(self) -> None:
         expected = "a" * 40
         with patch(
-            "pitchpulse.corpus.bronze._git",
+            "pitchpulse.dataset.bronze._git",
             return_value="b" * 40,
         ):
             with self.assertRaisesRegex(BronzeSourceError, "commit mismatch"):
@@ -88,14 +88,14 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
     def test_bronze_repository_rejects_local_changes(self) -> None:
         expected = "a" * 40
         with patch(
-            "pitchpulse.corpus.bronze._git",
+            "pitchpulse.dataset.bronze._git",
             side_effect=[expected, " M data/events/1.json"],
         ):
             with self.assertRaisesRegex(BronzeSourceError, "local changes"):
                 validate_bronze_repository(PROJECT_ROOT / "data", expected)
 
     def test_manifest_rejects_selection_path_outside_bronze(self) -> None:
-        manifest = json.loads(CORPUS_MANIFEST.read_text(encoding="utf-8"))
+        manifest = json.loads(DATASET_MANIFEST.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory(dir=PROJECT_ROOT) as temporary:
             directory = Path(temporary)
             bronze_root = PROJECT_ROOT / "data" / "bronze" / "statsbomb-open-data" / "data"
@@ -108,15 +108,15 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
                 directory,
             )
             manifest["selections"][0]["matches_path"] = "../LICENSE.pdf"
-            path = directory / "corpus.json"
+            path = directory / "dataset.json"
             path.write_text(json.dumps(manifest), encoding="utf-8")
 
-            with self.assertRaisesRegex(TrainingCorpusError, "escapes bronze.data_root"):
-                load_training_corpus_manifest(path)
+            with self.assertRaisesRegex(TrainingDatasetError, "escapes bronze.data_root"):
+                load_training_dataset_manifest(path)
 
-    def test_complete_corpus_with_adequate_splits_passes_gate(self) -> None:
-        assessment = self.corpus.assess(
-            self.corpus.match_ids,
+    def test_complete_dataset_with_adequate_splits_passes_gate(self) -> None:
+        assessment = self.dataset.assess(
+            self.dataset.match_ids,
             self._split_manifest(matches=300, positives=500),
         )
 
@@ -127,10 +127,10 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
     def test_world_cup_only_artifact_remains_experimental(self) -> None:
         world_cup_2022_ids = {
             match.match_id
-            for match in self.corpus.matches
+            for match in self.dataset.matches
             if match.competition_id == 43 and match.season_id == 106
         }
-        assessment = self.corpus.assess(
+        assessment = self.dataset.assess(
             world_cup_2022_ids,
             self._split_manifest(matches=10, positives=50),
         )
@@ -138,19 +138,19 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         self.assertFalse(assessment["adequate_for_production_evaluation"])
         self.assertEqual(assessment["materialized"]["match_count"], 64)
         self.assertIn("minimum_matches", assessment["blockers"])
-        self.assertIn("complete_declared_corpus", assessment["blockers"])
+        self.assertIn("complete_declared_dataset", assessment["blockers"])
         self.assertIn("test.minimum_concedes_positive", assessment["blockers"])
 
-    def test_training_guard_rejects_inadequate_corpus(self) -> None:
+    def test_training_guard_rejects_inadequate_dataset(self) -> None:
         manifest = {
             "ready_for_training": False,
             "training_blockers": ["minimum_matches"],
         }
 
         with self.assertRaisesRegex(
-            TrainingCorpusNotReady, "not ready"
+            TrainingDatasetNotReady, "not ready"
         ):
-            require_training_corpus_ready(manifest)
+            require_training_dataset_ready(manifest)
 
     @staticmethod
     def _split_manifest(*, matches: int, positives: int) -> dict[str, object]:

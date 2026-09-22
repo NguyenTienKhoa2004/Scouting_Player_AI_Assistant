@@ -34,7 +34,7 @@ class ParquetArtifactWriter:
             import pyarrow.parquet as pq
         except ImportError as exc:
             raise RuntimeError(
-                "Parquet export requires pyarrow; install requirements.txt"
+                "Parquet export requires pyarrow; run `uv sync`"
             ) from exc
 
         fingerprint = self._dataset_fingerprint(dataset)

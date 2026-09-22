@@ -29,7 +29,7 @@ from pitchpulse.model_training.logistic_baseline import LogisticBaselineTrainer 
 from pitchpulse.model_training.valuation import ActionValueWriter  # noqa: E402
 from pitchpulse.model_training.xgboost_models import XGBoostVaepTrainer  # noqa: E402
 from pitchpulse.pipelines.settings import (  # noqa: E402
-    CORPUS_MANIFEST,
+    DATASET_MANIFEST,
     MODEL_OUTPUT,
     latest_artifact,
 )
@@ -109,13 +109,13 @@ def _independent_rerun(reference: Path, candidate_root: Path) -> Path:
 
     labels = ChunkedTargetLabelWriter().write(
         feature_directory,
-        corpus_manifest_path=CORPUS_MANIFEST,
+        dataset_manifest_path=DATASET_MANIFEST,
         output_root=candidate_root,
         progress=progress,
     )
     ChunkedSplitArtifactWriter().write(
         labels.directory,
-        corpus_manifest_path=CORPUS_MANIFEST,
+        dataset_manifest_path=DATASET_MANIFEST,
         progress=progress,
     )
     ChunkedModelDatasetWriter().write(
@@ -124,7 +124,7 @@ def _independent_rerun(reference: Path, candidate_root: Path) -> Path:
     ChunkedPreparationFinalizer().write(
         feature_directory,
         labels.directory,
-        corpus_manifest_path=CORPUS_MANIFEST,
+        dataset_manifest_path=DATASET_MANIFEST,
         progress=progress,
     )
     _complete_candidate(labels.directory, reference_manifest)
@@ -173,7 +173,7 @@ def _complete_candidate(candidate: Path, reference_manifest: dict[str, object]) 
         status = "action_valuation_complete"
     if status == "action_valuation_complete":
         PlayerAggregationWriter().write(
-            candidate, CORPUS_MANIFEST, progress=progress
+            candidate, DATASET_MANIFEST, progress=progress
         )
         status = "player_aggregation_complete"
     _record_runtime_dependencies(candidate)

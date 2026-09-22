@@ -6,7 +6,7 @@ PostgreSQL service:
 
 ```powershell
 $env:PITCHPULSE_INTEGRATION_DATABASE_URL = "postgresql://pitchpulse:1234567@localhost:5433/pitchpulse"
-python -m unittest tests.integration.test_silver_postgres -v
+uv run python -m unittest tests.integration.test_silver_postgres -v
 ```
 
 The configured user must be allowed to create and drop databases. Without the

@@ -14,7 +14,7 @@ from pitchpulse.player_vaep.artifacts import (  # noqa: E402
     PlayerAggregationWriter,
 )
 from pitchpulse.pipelines.settings import (  # noqa: E402
-    CORPUS_MANIFEST,
+    DATASET_MANIFEST,
     MODEL_OUTPUT,
     latest_artifact,
 )
@@ -34,7 +34,7 @@ def main() -> None:
     progress = lambda message: print(message, flush=True)
     result = PlayerAggregationWriter().write(
         artifact_directory,
-        CORPUS_MANIFEST,
+        DATASET_MANIFEST,
         minimum_minutes=args.minimum_minutes,
         progress=progress,
     )

@@ -56,6 +56,6 @@ Artifacts created by the old custom `statsbomb-spadl-v1` contract are obsolete
 and must not be mixed with this contract. Rebuild with:
 
 ```powershell
-python -m pitchpulse.vaep_features.run
-python -m pitchpulse.vaep_features.run --include-360
+uv run python -m pitchpulse.vaep_features.run
+uv run python -m pitchpulse.vaep_features.run --include-360
 ```

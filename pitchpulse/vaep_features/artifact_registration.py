@@ -1,4 +1,4 @@
-"""Register a Parquet-first Plan 03 corpus as a real analytics run."""
+"""Register a Parquet-first Plan 03 dataset as a real analytics run."""
 
 from __future__ import annotations
 

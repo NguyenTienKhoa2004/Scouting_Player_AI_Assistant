@@ -23,7 +23,7 @@ class PlayerAggregationWriterTests(unittest.TestCase):
     def test_writes_player_artifact_and_updates_training_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            corpus_manifest = self._write_corpus(root)
+            dataset_manifest = self._write_dataset(root)
             actions_path = root / "actions.parquet"
             values_path = root / "action_values.parquet"
             self._write_actions(actions_path)
@@ -61,7 +61,7 @@ class PlayerAggregationWriterTests(unittest.TestCase):
             )
 
             paths = PlayerAggregationWriter().write(
-                root, corpus_manifest, minimum_minutes=60
+                root, dataset_manifest, minimum_minutes=60
             )
 
             self.assertTrue(paths.player_vaep.is_file())
@@ -80,12 +80,12 @@ class PlayerAggregationWriterTests(unittest.TestCase):
             self.assertEqual(training_manifest["status"], "player_aggregation_complete")
 
             repeated = PlayerAggregationWriter().write(
-                root, corpus_manifest, minimum_minutes=60
+                root, dataset_manifest, minimum_minutes=60
             )
             self.assertEqual(repeated, paths)
 
     @staticmethod
-    def _write_corpus(root: Path) -> Path:
+    def _write_dataset(root: Path) -> Path:
         data = root / "bronze"
         (data / "matches" / "1").mkdir(parents=True)
         (data / "lineups").mkdir()
@@ -134,7 +134,7 @@ class PlayerAggregationWriterTests(unittest.TestCase):
             json.dumps([{"period": 2, "minute": 95, "second": 0}]),
             encoding="utf-8",
         )
-        manifest = root / "corpus.json"
+        manifest = root / "dataset.json"
         write_json(
             manifest,
             {

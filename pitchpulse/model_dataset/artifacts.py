@@ -1,4 +1,4 @@
-"""Memory-bounded model-dataset join for the full VAEP corpus."""
+"""Memory-bounded model-dataset join for the full VAEP dataset."""
 
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ class ChunkedModelDatasetWriter:
             import pyarrow.parquet as pq
         except ImportError as exc:
             raise RuntimeError(
-                "model dataset construction requires pyarrow; install requirements.txt"
+                "model dataset construction requires pyarrow; run `uv sync`"
             ) from exc
 
         # 1. Locate the three source artifacts and verify their manifests.

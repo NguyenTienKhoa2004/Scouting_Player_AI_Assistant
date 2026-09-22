@@ -46,9 +46,23 @@ class IngestionCounts:
         )
         return events_ok and frames_ok and intervals_ok
 
+    def add(self, other: IngestionCounts) -> None:
+        self.raw += other.raw
+        self.accepted += other.accepted
+        self.rejected += other.rejected
+        self.deduplicated += other.deduplicated
+        self.raw_360 += other.raw_360
+        self.accepted_360 += other.accepted_360
+        self.rejected_360 += other.rejected_360
+        self.deduplicated_360 += other.deduplicated_360
+        self.raw_lineup_intervals += other.raw_lineup_intervals
+        self.accepted_lineup_intervals += other.accepted_lineup_intervals
+        self.rejected_lineup_intervals += other.rejected_lineup_intervals
+        self.deduplicated_lineup_intervals += other.deduplicated_lineup_intervals
+
 
 class StatsBombIngestionService:
-    """Ingest selected matches atomically through the canonical pipeline."""
+    """Normalize, validate, and persist StatsBomb matches."""
 
     def __init__(
         self,
@@ -82,86 +96,102 @@ class StatsBombIngestionService:
         progress: Callable[[int, int, int, IngestionCounts], None] | None = None,
     ) -> IngestionCounts:
         counts = IngestionCounts()
-        seen_source_events: set[tuple[str, Any]] = set()
-        seen_three_sixty: set[tuple[str, Any]] = set()
-
         for position, match_id in enumerate(match_ids, start=1):
-            bundle = self.reader.read_match_bundle(match_id)
-            self._upsert_dimensions(bundle)
-            self._ingest_lineup_intervals(ingestion_run_id, bundle, counts)
-            valid_events = []
-
-            for record in bundle.events:
-                counts.raw += 1
-                try:
-                    event = self.normalizer.normalize(record)
-                except NormalizationError as exc:
-                    counts.rejected += 1
-                    self.writer.insert_invalid_event(
-                        ingestion_run_id=ingestion_run_id,
-                        record=record,
-                        reason_code=exc.code,
-                        reason=exc.message,
-                        project_root=self.project_root,
-                    )
-                    continue
-
-                source_key = (event.source, event.source_event_id)
-                if source_key in seen_source_events:
-                    counts.deduplicated += 1
-                    continue
-                seen_source_events.add(source_key)
-
-                result = self.validator.validate(event)
-                if not result.is_valid:
-                    counts.rejected += 1
-                    reason_code = (
-                        result.issues[0].code
-                        if len(result.issues) == 1
-                        else "multiple_validation_errors"
-                    )
-                    reason = "; ".join(
-                        f"{issue.code}: {issue.message}" for issue in result.issues
-                    )
-                    self.writer.insert_invalid_event(
-                        ingestion_run_id=ingestion_run_id,
-                        record=record,
-                        reason_code=reason_code,
-                        reason=reason,
-                        project_root=self.project_root,
-                    )
-                    continue
-
-                valid_events.append(event)
-
-            upserted = self.writer.upsert_events(ingestion_run_id, valid_events)
-            counts.accepted += upserted.inserted
-            counts.deduplicated += upserted.updated
-            self._ingest_three_sixty(
-                ingestion_run_id,
-                bundle,
-                {event.source_event_id for event in valid_events},
-                seen_three_sixty,
-                counts,
-            )
+            counts.add(self.ingest_match(ingestion_run_id, match_id))
             if progress is not None:
                 progress(position, len(match_ids), match_id, counts)
 
-        if not counts.reconciled:
-            raise RuntimeError(
-                "Ingestion counts do not reconcile: "
-                f"raw={counts.raw}, accepted={counts.accepted}, "
-                f"rejected={counts.rejected}, deduplicated={counts.deduplicated}; "
-                f"raw_360={counts.raw_360}, accepted_360={counts.accepted_360}, "
-                f"rejected_360={counts.rejected_360}, "
-                f"deduplicated_360={counts.deduplicated_360}; "
-                f"raw_lineup_intervals={counts.raw_lineup_intervals}, "
-                f"accepted_lineup_intervals={counts.accepted_lineup_intervals}, "
-                f"rejected_lineup_intervals={counts.rejected_lineup_intervals}, "
-                f"deduplicated_lineup_intervals="
-                f"{counts.deduplicated_lineup_intervals}"
-            )
+        self._require_reconciled(counts)
         return counts
+
+    def ingest_match(self, ingestion_run_id: int, match_id: int) -> IngestionCounts:
+        """Ingest one match; the caller owns its database transaction."""
+
+        counts = IngestionCounts()
+        bundle = self.reader.read_match_bundle(match_id)
+        self.writer.deactivate_match_snapshot(
+            ingestion_run_id=ingestion_run_id,
+            source=bundle.match.source,
+            match_id=match_id,
+        )
+        self._upsert_dimensions(bundle)
+        self._ingest_lineup_intervals(ingestion_run_id, bundle, counts)
+        valid_events = []
+        seen_source_events: set[tuple[str, Any]] = set()
+
+        for record in bundle.events:
+            counts.raw += 1
+            try:
+                event = self.normalizer.normalize(record)
+            except NormalizationError as exc:
+                counts.rejected += 1
+                self.writer.insert_invalid_event(
+                    ingestion_run_id=ingestion_run_id,
+                    record=record,
+                    reason_code=exc.code,
+                    reason=exc.message,
+                    project_root=self.project_root,
+                )
+                continue
+
+            source_key = (event.source, event.source_event_id)
+            if source_key in seen_source_events:
+                counts.deduplicated += 1
+                continue
+            seen_source_events.add(source_key)
+
+            result = self.validator.validate(event)
+            if not result.is_valid:
+                counts.rejected += 1
+                reason_code = (
+                    result.issues[0].code
+                    if len(result.issues) == 1
+                    else "multiple_validation_errors"
+                )
+                reason = "; ".join(
+                    f"{issue.code}: {issue.message}" for issue in result.issues
+                )
+                self.writer.insert_invalid_event(
+                    ingestion_run_id=ingestion_run_id,
+                    record=record,
+                    reason_code=reason_code,
+                    reason=reason,
+                    project_root=self.project_root,
+                )
+                continue
+
+            valid_events.append(event)
+
+        upserted = self.writer.upsert_events(ingestion_run_id, valid_events)
+        counts.accepted += upserted.inserted
+        counts.deduplicated += upserted.updated
+        self._ingest_three_sixty(
+            ingestion_run_id,
+            bundle,
+            {event.source_event_id for event in valid_events},
+            set(),
+            counts,
+        )
+        self._require_reconciled(counts)
+        return counts
+
+    @staticmethod
+    def _require_reconciled(counts: IngestionCounts) -> None:
+        if counts.reconciled:
+            return
+        raise RuntimeError(
+            "Ingestion counts do not reconcile: "
+            f"raw={counts.raw}, accepted={counts.accepted}, "
+            f"rejected={counts.rejected}, deduplicated={counts.deduplicated}; "
+            f"raw_360={counts.raw_360}, accepted_360={counts.accepted_360}, "
+            f"rejected_360={counts.rejected_360}, "
+            f"deduplicated_360={counts.deduplicated_360}; "
+            f"raw_lineup_intervals={counts.raw_lineup_intervals}, "
+            f"accepted_lineup_intervals={counts.accepted_lineup_intervals}, "
+            f"rejected_lineup_intervals={counts.rejected_lineup_intervals}, "
+            f"deduplicated_lineup_intervals="
+            f"{counts.deduplicated_lineup_intervals}"
+        )
 
     def _ingest_lineup_intervals(
         self,

@@ -32,6 +32,25 @@ class IngestionCountsTests(unittest.TestCase):
         )
         self.assertTrue(counts.reconciled)
 
+    def test_add_accumulates_committed_match_counts(self) -> None:
+        total = IngestionCounts(raw=2, accepted=2, raw_360=1, accepted_360=1)
+        total.add(
+            IngestionCounts(
+                raw=3,
+                accepted=2,
+                rejected=1,
+                raw_lineup_intervals=4,
+                accepted_lineup_intervals=4,
+            )
+        )
+
+        self.assertEqual(total.raw, 5)
+        self.assertEqual(total.accepted, 4)
+        self.assertEqual(total.rejected, 1)
+        self.assertEqual(total.raw_360, 1)
+        self.assertEqual(total.raw_lineup_intervals, 4)
+        self.assertTrue(total.reconciled)
+
 
 if __name__ == "__main__":
     unittest.main()

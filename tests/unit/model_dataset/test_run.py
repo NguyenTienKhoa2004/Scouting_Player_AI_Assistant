@@ -42,13 +42,13 @@ class ChunkedPreparationRunTests(unittest.TestCase):
         latest_artifact.assert_called_once_with(run.FEATURE_OUTPUT, "manifest.json")
         label_writer_type.return_value.write.assert_called_once_with(
             feature_directory,
-            corpus_manifest_path=run.CORPUS_MANIFEST,
+            dataset_manifest_path=run.DATASET_MANIFEST,
             output_root=run.MODEL_OUTPUT,
             progress=ANY,
         )
         split_writer_type.return_value.write.assert_called_once_with(
             label_directory,
-            corpus_manifest_path=run.CORPUS_MANIFEST,
+            dataset_manifest_path=run.DATASET_MANIFEST,
             progress=ANY,
         )
         dataset_writer_type.return_value.write.assert_called_once_with(
@@ -59,7 +59,7 @@ class ChunkedPreparationRunTests(unittest.TestCase):
         finalizer_type.return_value.write.assert_called_once_with(
             feature_directory,
             label_directory,
-            corpus_manifest_path=run.CORPUS_MANIFEST,
+            dataset_manifest_path=run.DATASET_MANIFEST,
             progress=ANY,
         )
 

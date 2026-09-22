@@ -1,9 +1,0 @@
--e .
-psycopg[binary]==3.3.4
-pyarrow==25.0.1
-socceraction==1.5.3
-scikit-learn==1.9.1
-xgboost==3.4.1
-# pandera 0.17.x (required by socceraction 1.5.3) imports multimethod.overload,
-# which was removed in multimethod 2.x.
-multimethod<2

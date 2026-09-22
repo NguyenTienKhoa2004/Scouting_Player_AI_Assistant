@@ -134,7 +134,7 @@ class PostgresSpadlInputReader:
             raise SpadlInputContractError(report)
 
         params: tuple[Any, ...] = ()
-        where = ""
+        where = " WHERE is_active"
         if match_ids is not None:
             normalized_ids = sorted(set(match_ids))
             if not normalized_ids:
@@ -153,7 +153,7 @@ class PostgresSpadlInputReader:
                     ),
                 )
                 raise SpadlInputContractError(report)
-            where = " WHERE match_id = ANY(%s::bigint[])"
+            where = " WHERE is_active AND match_id = ANY(%s::bigint[])"
             params = (normalized_ids,)
 
         events = tuple(
